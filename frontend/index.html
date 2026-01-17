@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Demo App</title>
+</head>
+<body>
+  <h1>Messages</h1>
+
+  <input id="msg" placeholder="Type a message" />
+  <button onclick="sendMessage()">Send</button>
+
+  <ul id="list"></ul>
+
+  <script>
+    async function sendMessage() {
+      const text = document.getElementById("msg").value;
+
+      await fetch("http://localhost:3000/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      loadMessages();
+    }
+
+    async function loadMessages() {
+      const res = await fetch("http://localhost:3000/messages");
+      const messages = await res.json();
+
+      const list = document.getElementById("list");
+      list.innerHTML = "";
+
+      messages.forEach(m => {
+        const li = document.createElement("li");
+        li.textContent = m.text;
+        list.appendChild(li);
+      });
+    }
+
+    loadMessages();
+  </script>
+</body>
+</html>

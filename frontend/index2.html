@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>My first HTML page</title>
+</head>
+
+<body>
+
+<h1>Welcome to my WORLD !!!</h1>
+<h2>this feels awesome does not it?</h2>    
+
+<input id="msg" placeholder="Type anything">
+<button onclick="read_msg()">Send!</button>
+
+<script>
+    function read_msg()
+    {
+        const text_msg = document.getElementById("msg").value;
+        console.log(text_msg);
+    }
+</script>
+
+
+</body>
+
+</html>
