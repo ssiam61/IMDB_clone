@@ -2,7 +2,8 @@ BEGIN;
 
 -- USERS
 CREATE TABLE users (
-    username TEXT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
@@ -11,13 +12,14 @@ CREATE TABLE users (
 
 -- GENRE
 CREATE TABLE genre (
-    name TEXT PRIMARY KEY
+    id SERIAL PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL
 );
 
 CREATE TABLE user_genre_preference (
-    username TEXT REFERENCES users(username) ON DELETE CASCADE,
-    genre_name TEXT REFERENCES genre(name) ON DELETE CASCADE,
-    PRIMARY KEY (username, genre_name)
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    genre_id INT REFERENCES genre(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, genre_id)
 );
 
 -- PERSON
@@ -30,9 +32,9 @@ CREATE TABLE person (
 );
 
 CREATE TABLE user_fan (
-    username TEXT REFERENCES users(username) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
     person_id INT REFERENCES person(id) ON DELETE CASCADE,
-    PRIMARY KEY (username, person_id)
+    PRIMARY KEY (user_id, person_id)
 );
 
 -- AWARD
@@ -53,7 +55,7 @@ CREATE TABLE person_award (
 -- MEDIA
 CREATE TABLE media (
     id SERIAL PRIMARY KEY,
-    media_type TEXT CHECK (media_type IN ('movie', 'series')),
+    media_type TEXT CHECK (media_type IN ('movie', 'series')) NOT NULL,
     name TEXT NOT NULL,
     teaser_link TEXT,
     description TEXT,
@@ -75,7 +77,8 @@ CREATE TABLE season (
     series_id INT REFERENCES series(media_id) ON DELETE CASCADE,
     number INT NOT NULL,
     imdb_rating NUMERIC(3,1),
-    user_rating NUMERIC(3,1)
+    user_rating NUMERIC(3,1),
+    UNIQUE (series_id, number)
 );
 
 CREATE TABLE episode (
@@ -83,19 +86,20 @@ CREATE TABLE episode (
     season_id INT REFERENCES season(id) ON DELETE CASCADE,
     number INT NOT NULL,
     imdb_rating NUMERIC(3,1),
-    user_rating NUMERIC(3,1)
+    user_rating NUMERIC(3,1),
+    UNIQUE (season_id, number)
 );
 
 CREATE TABLE media_genre (
     media_id INT REFERENCES media(id) ON DELETE CASCADE,
-    genre_name TEXT REFERENCES genre(name) ON DELETE CASCADE,
-    PRIMARY KEY (media_id, genre_name)
+    genre_id INT REFERENCES genre(id) ON DELETE CASCADE,
+    PRIMARY KEY (media_id, genre_id)
 );
 
 CREATE TABLE media_person_role (
     media_id INT REFERENCES media(id) ON DELETE CASCADE,
     person_id INT REFERENCES person(id) ON DELETE CASCADE,
-    role TEXT CHECK (role IN ('actor', 'director')),
+    role TEXT CHECK (role IN ('actor', 'director', 'writer', 'producer')),
     PRIMARY KEY (media_id, person_id, role)
 );
 
@@ -109,7 +113,7 @@ CREATE TABLE media_award (
 -- REVIEW / POST
 CREATE TABLE review (
     id SERIAL PRIMARY KEY,
-    user_id TEXT REFERENCES users(username) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
     media_id INT REFERENCES media(id),
     season_id INT REFERENCES season(id),
     episode_id INT REFERENCES episode(id),
@@ -117,26 +121,36 @@ CREATE TABLE review (
     description TEXT,
     upvote INT DEFAULT 0,
     downvote INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CHECK (
+        media_id IS NOT NULL
+        OR season_id IS NOT NULL
+        OR episode_id IS NOT NULL
+    )
 );
 
 -- REPLY
 CREATE TABLE reply (
     id SERIAL PRIMARY KEY,
-    user_id TEXT REFERENCES users(username) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
     parent_review_id INT REFERENCES review(id) ON DELETE CASCADE,
     parent_reply_id INT REFERENCES reply(id) ON DELETE CASCADE,
     description TEXT,
     upvote INT DEFAULT 0,
     downvote INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+	CHECK(
+    		(parent_review_id IS NOT NULL AND parent_reply_id IS NULL)
+ 			OR (parent_review_id IS NULL AND parent_reply_id IS NOT NULL)
+	)
 );
 
 -- WATCHLIST
 CREATE TABLE watchlist (
-    username TEXT REFERENCES users(username) ON DELETE CASCADE,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
     media_id INT REFERENCES media(id) ON DELETE CASCADE,
-    PRIMARY KEY (username, media_id)
+    PRIMARY KEY (user_id, media_id)
 );
 
 COMMIT;
