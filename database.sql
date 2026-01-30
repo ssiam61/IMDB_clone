@@ -61,16 +61,18 @@ CREATE TABLE media (
 );
 
 CREATE TABLE movie (
-    media_id INT PRIMARY KEY REFERENCES media(id) ON DELETE CASCADE
+    id SERIAL PRIMARY KEY, 
+    media_id INT REFERENCES media(id) ON DELETE CASCADE
 );
 
 CREATE TABLE series (
-    media_id INT PRIMARY KEY REFERENCES media(id) ON DELETE CASCADE
+    id SERIAL PRIMARY KEY,
+    media_id INT REFERENCES media(id) ON DELETE CASCADE
 );
 
 CREATE TABLE season (
     id SERIAL PRIMARY KEY,
-    series_id INT REFERENCES series(media_id) ON DELETE CASCADE,
+    series_id INT REFERENCES series(id) ON DELETE CASCADE,
     number INT NOT NULL,
     imdb_rating NUMERIC(3,1),
     user_rating NUMERIC(3,1),

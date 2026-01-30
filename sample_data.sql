@@ -85,8 +85,8 @@ INSERT INTO series (media_id) VALUES (3);
 
 -- Seasons for The Mandalorian (media_id=3)
 INSERT INTO season (id, series_id, number, imdb_rating, user_rating) VALUES
-  (1,3,1,8.6,8.8),
-  (2,3,2,8.7,8.9);
+  (1,1,1,8.6,8.8),
+  (2,1,2,8.7,8.9);
 
 -- Episodes for Season 1 and 2
 INSERT INTO episode (id, season_id, number, imdb_rating, user_rating) VALUES
