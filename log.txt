@@ -1,0 +1,26 @@
+[SIAM - 30/01/2026 06:13 AM]
+- Told Arghya about Schema fix
+- Tested schema.sql in postgres (Works !!!)
+- Currently testing db population methods.
+
+Instructions for creating DB:
+1. In cmd, type "psql -U postgres"
+2. Enter your password
+3. Type "CREATE DATABASE test1";
+   (Database is named test1 for testing purposes)
+
+4. Type "\q" 
+   (for quitting the database.)
+
+5. Type "psql -U postgres -d test1 -f schema.sql"
+   (Make sure schema.sql is in the same folder directory)
+   
+6. Enter your password
+   (If all goes well, you should see couple of CREATE TABLE messages)
+   
+7. Type "psql -U postgres -d test1"
+8. Enter your password
+9. Type "\dt"
+   (This should list all the tables that was created by schema.sql)
+   (18 rows)
+   
