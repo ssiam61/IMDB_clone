@@ -24,3 +24,18 @@ Instructions for creating DB:
    (This should list all the tables that was created by schema.sql)
    (18 rows)
    
+[SIAM - 30/01/2026 8:08 AM]
+- Updated schema.sql
+- Added sample_data.sql
+- Currently working on backend api(halka patla)
+
+Instructions for using sample data:
+1. Create DB test1 following above instructions
+2. Make sure sample_data.sql is in the same folder where you open cmd
+3. Type "psql -U postgres -d test1 -f sample_data.sql"
+4. Enter your password
+   (If all goes well you should see a couple of INSERT messages)
+5. Type "\dt" to list tables.
+6. SELECT * from users;
+   (You can check by querying data from tables. Example above.)
+
