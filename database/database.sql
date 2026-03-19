@@ -59,23 +59,6 @@ CREATE TABLE user_ban (
     CHECK (is_permanent = TRUE OR expires_at IS NOT NULL)
 );
 
--- Users (or admins) can flag reviews and replies for admin review.
-CREATE TABLE report (
-    id SERIAL PRIMARY KEY,
-    reporter_id INT REFERENCES users(id) ON DELETE SET NULL,
-    review_id INT REFERENCES review(id) ON DELETE CASCADE,
-    reply_id INT REFERENCES reply(id) ON DELETE CASCADE,
-    reason VARCHAR(500),
-    status VARCHAR(20) NOT NULL DEFAULT 'pending'
-        CHECK (status IN ('pending', 'resolved', 'dismissed')),
-    actioned_by INT REFERENCES admin(id) ON DELETE SET NULL,
-    actioned_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    -- A report must target exactly one thing
-    CHECK (num_nonnulls(review_id, reply_id) = 1)
-);
-
 -- ─────────────────────────────────────────────
 -- GENRE
 -- ─────────────────────────────────────────────
@@ -232,6 +215,23 @@ CREATE TABLE reply (
         (parent_review_id IS NOT NULL AND parent_reply_id IS NULL)
         OR (parent_review_id IS NULL AND parent_reply_id IS NOT NULL)
     )
+);
+
+-- Users (or admins) can flag reviews and replies for admin review.
+CREATE TABLE report (
+    id SERIAL PRIMARY KEY,
+    reporter_id INT REFERENCES users(id) ON DELETE SET NULL,
+    review_id INT REFERENCES review(id) ON DELETE CASCADE,
+    reply_id INT REFERENCES reply(id) ON DELETE CASCADE,
+    reason VARCHAR(500),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'resolved', 'dismissed')),
+    actioned_by INT REFERENCES admin(id) ON DELETE SET NULL,
+    actioned_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- A report must target exactly one thing
+    CHECK (num_nonnulls(review_id, reply_id) = 1)
 );
 
 -- ─────────────────────────────────────────────
