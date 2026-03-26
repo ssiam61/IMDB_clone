@@ -4,6 +4,9 @@ import cors from 'cors';
 import mediaRoutes from "./routes/mediaRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import watchlistRoutes from "./routes/watchlistRoutes.js";
+
+
 // import {authMiddleware} from "./middleware/authMiddleware.js";
 
 
@@ -21,7 +24,7 @@ app.get('/', (req, res) => {
 app.use("/api/media", mediaRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/auth", authRoutes);
-
+app.use("/api/watchlist", watchlistRoutes);
 
 // middleware testing.
 // app.get("/api/protected", authMiddleware, (req, res) => {
