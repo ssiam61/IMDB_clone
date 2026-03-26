@@ -1,0 +1,28 @@
+.media-card {
+  width: 160px !important;
+  flex: 0 0 160px !important;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.media-card:hover {
+  transform: scale(1.05);
+}
+
+.media-card:active {
+  transform: scale(0.95);
+}
+
+.media-card-image img {
+  width: 100%;
+  height: 220px;    
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.media-card-title {
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-top: 6px;
+}
