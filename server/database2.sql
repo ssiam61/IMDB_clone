@@ -1,6 +1,6 @@
-CREATE DATABASE IMDBtest;
+CREATE DATABASE IMDBtest2;
 
-\c imdbtest;
+\c imdbtest2;
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -13,13 +13,6 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ─────────────────────────────────────────────
--- ADMIN SYSTEM
--- ─────────────────────────────────────────────
-
--- Admin accounts are always linked to an existing user account.
--- role: 'super_admin' has unrestricted access; 'moderator' handles
--- content/user moderation but cannot manage other admins.
 CREATE TABLE admin (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE UNIQUE NOT NULL,
@@ -29,22 +22,16 @@ CREATE TABLE admin (
     granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Audit log: every significant admin action is recorded here.
--- target_type + target_id identify the affected row (e.g. 'user' + 42,
--- 'media' + 7, 'review' + 99) without requiring individual FK columns
--- for every possible target table.
 CREATE TABLE admin_log (
     id SERIAL PRIMARY KEY,
     admin_id INT REFERENCES admin(id) ON DELETE SET NULL,
-    action VARCHAR(100) NOT NULL,        -- e.g. 'ban_user', 'add_movie', 'delete_review'
-    target_type VARCHAR(50),             -- e.g. 'user', 'media', 'review', 'reply'
-    target_id INT,                       -- PK of the affected row
+    action VARCHAR(100) NOT NULL, 
+    target_type VARCHAR(50),   
+    target_id INT,                      
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tracks banned / kicked users.
--- Soft bans (is_temp = TRUE with an expiry) or permanent bans are both supported.
 CREATE TABLE user_ban (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
@@ -52,33 +39,12 @@ CREATE TABLE user_ban (
     reason TEXT,
     is_permanent BOOLEAN DEFAULT FALSE,
     banned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP,               -- NULL means permanent / until lifted
-    lifted_at TIMESTAMP,               -- set when ban is manually revoked
+    expires_at TIMESTAMP,  
+    lifted_at TIMESTAMP,               
     lifted_by INT REFERENCES admin(id) ON DELETE SET NULL,
 
     CHECK (is_permanent = TRUE OR expires_at IS NOT NULL)
 );
-
--- Users (or admins) can flag reviews and replies for admin review.
-CREATE TABLE report (
-    id SERIAL PRIMARY KEY,
-    reporter_id INT REFERENCES users(id) ON DELETE SET NULL,
-    review_id INT REFERENCES review(id) ON DELETE CASCADE,
-    reply_id INT REFERENCES reply(id) ON DELETE CASCADE,
-    reason VARCHAR(500),
-    status VARCHAR(20) NOT NULL DEFAULT 'pending'
-        CHECK (status IN ('pending', 'resolved', 'dismissed')),
-    actioned_by INT REFERENCES admin(id) ON DELETE SET NULL,
-    actioned_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    -- A report must target exactly one thing
-    CHECK (num_nonnulls(review_id, reply_id) = 1)
-);
-
--- ─────────────────────────────────────────────
--- GENRE
--- ─────────────────────────────────────────────
 
 CREATE TABLE genre (
     id SERIAL PRIMARY KEY,
@@ -90,10 +56,6 @@ CREATE TABLE preference (
     genre_id INT REFERENCES genre(id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, genre_id)
 );
-
--- ─────────────────────────────────────────────
--- PERSON / CELEBRITY
--- ─────────────────────────────────────────────
 
 CREATE TABLE person (
     id SERIAL PRIMARY KEY,
@@ -109,10 +71,6 @@ CREATE TABLE fan (
     PRIMARY KEY (user_id, person_id)
 );
 
--- ─────────────────────────────────────────────
--- AWARDS
--- ─────────────────────────────────────────────
-
 CREATE TABLE award (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -127,9 +85,6 @@ CREATE TABLE person_award (
     PRIMARY KEY (person_id, award_id, year)
 );
 
--- ─────────────────────────────────────────────
--- MEDIA (movies, series, etc.)
--- ─────────────────────────────────────────────
 
 CREATE TABLE media (
     id SERIAL PRIMARY KEY,
@@ -139,7 +94,6 @@ CREATE TABLE media (
     imdb_rating NUMERIC(3,1),
     user_rating NUMERIC(3,1),
     duration INT,
-    -- tracks which admin added this entry and whether it has been published
     added_by INT REFERENCES admin(id) ON DELETE SET NULL,
     last_updated_by INT REFERENCES admin(id) ON DELETE SET NULL,
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -195,10 +149,6 @@ CREATE TABLE media_award (
     PRIMARY KEY (media_id, award_id, year)
 );
 
--- ─────────────────────────────────────────────
--- REVIEWS & REPLIES
--- ─────────────────────────────────────────────
-
 CREATE TABLE review (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
@@ -209,7 +159,7 @@ CREATE TABLE review (
     description VARCHAR(1000),
     upvote INT DEFAULT 0,
     downvote INT DEFAULT 0,
-    is_removed BOOLEAN DEFAULT FALSE,        -- soft-delete by admin
+    is_removed BOOLEAN DEFAULT FALSE,        
     removed_by INT REFERENCES admin(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -224,7 +174,7 @@ CREATE TABLE reply (
     description VARCHAR(1000),
     upvote INT DEFAULT 0,
     downvote INT DEFAULT 0,
-    is_removed BOOLEAN DEFAULT FALSE,        -- soft-delete by admin
+    is_removed BOOLEAN DEFAULT FALSE,        
     removed_by INT REFERENCES admin(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -234,9 +184,21 @@ CREATE TABLE reply (
     )
 );
 
--- ─────────────────────────────────────────────
--- WATCHLIST & ATTACHMENTS
--- ─────────────────────────────────────────────
+
+CREATE TABLE report (
+    id SERIAL PRIMARY KEY,
+    reporter_id INT REFERENCES users(id) ON DELETE SET NULL,
+    review_id INT REFERENCES review(id) ON DELETE CASCADE,
+    reply_id INT REFERENCES reply(id) ON DELETE CASCADE,
+    reason VARCHAR(500),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'resolved', 'dismissed')),
+    actioned_by INT REFERENCES admin(id) ON DELETE SET NULL,
+    actioned_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CHECK (num_nonnulls(review_id, reply_id) = 1)
+);
 
 CREATE TABLE watchlist (
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
