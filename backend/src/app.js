@@ -1,7 +1,11 @@
 import express from 'express';
 import cors from 'cors';
+
 import mediaRoutes from "./routes/mediaRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+// import {authMiddleware} from "./middleware/authMiddleware.js";
+
 
 const app = express();
 
@@ -15,8 +19,16 @@ app.get('/', (req, res) => {
 });
 
 app.use("/api/media", mediaRoutes);
-
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/auth", authRoutes);
 
+
+// middleware testing.
+// app.get("/api/protected", authMiddleware, (req, res) => {
+//   res.json({
+//     message: "You are authenticated",
+//     user: req.user
+//   });
+// });
 
 export default app;
