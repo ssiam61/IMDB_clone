@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import mediaRoutes from "./routes/mediaRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
 
 const app = express();
 
@@ -14,5 +15,8 @@ app.get('/', (req, res) => {
 });
 
 app.use("/api/media", mediaRoutes);
+
+app.use("/api/reviews", reviewRoutes);
+
 
 export default app;
