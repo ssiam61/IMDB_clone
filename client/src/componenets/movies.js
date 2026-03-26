@@ -1,4 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
+import MovieCard from "./moviecard";
 
 const Movies = () => {
     const [movies, setMovies] = useState([]);
@@ -20,13 +21,14 @@ const Movies = () => {
 
     return (
         <Fragment>
-            <h1 className="text-center mt-5">Movie er namsomuho</h1>
-
-            <ul className="mt-4">
+            <h1 className="text-center mt-5">Movies</h1>
+            <div className="row row-cols-1 row-cols-md-3 g-4 mt-4">
                 {movies.map(movie => (
-                    <li key={movie.id}>{movie.name}</li>
+                    <div className="col" key={movie.id}>
+                        <MovieCard movie={movie} />
+                    </div>
                 ))}
-            </ul>
+            </div>
         </Fragment>
     );
 };

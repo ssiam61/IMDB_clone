@@ -16,21 +16,22 @@
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+
 import Auth from "./pages/auth";
 import UserDashboard from "./pages/userDashboard";
 import AdminDashboard from "./pages/adminDashboard";
+import Movies from "./componenets/movies";
+import MovieDetailPage from "./componenets/moviedetailpage";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {}
         <Route path="/" element={<Auth />} />
-
-        {}
         <Route path="/user-dashboard" element={<UserDashboard />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
-
+        <Route path="/movies" element={<Movies />} />
+        <Route path="/movies/:id" element={<MovieDetailPage />} />
       </Routes>
     </BrowserRouter>
   );

@@ -35,8 +35,10 @@ const Auth = () => {
             return;
           }
 
+          localStorage.setItem("user", JSON.stringify(found));
           window.location.href = "/admin-dashboard";
         } else {
+          localStorage.setItem("user", JSON.stringify(found));
           window.location.href = "/user-dashboard";
         }
       } catch (err) {

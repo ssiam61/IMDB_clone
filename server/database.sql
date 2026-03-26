@@ -1,6 +1,6 @@
-CREATE DATABASE IMDBtest;
+CREATE DATABASE IMDBtest2;
 
-\c imdbtest;
+\c imdbtest2;
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -8,7 +8,42 @@ CREATE TABLE users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(50) NOT NULL,
-    profile_picture VARCHAR(500)
+    profile_picture VARCHAR(500),
+    is_banned BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE admin (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE UNIQUE NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'moderator'
+        CHECK (role IN ('super_admin', 'moderator')),
+    granted_by INT REFERENCES admin(id) ON DELETE SET NULL,
+    granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE admin_log (
+    id SERIAL PRIMARY KEY,
+    admin_id INT REFERENCES admin(id) ON DELETE SET NULL,
+    action VARCHAR(100) NOT NULL, 
+    target_type VARCHAR(50),   
+    target_id INT,                      
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_ban (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    banned_by INT REFERENCES admin(id) ON DELETE SET NULL,
+    reason TEXT,
+    is_permanent BOOLEAN DEFAULT FALSE,
+    banned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP,  
+    lifted_at TIMESTAMP,               
+    lifted_by INT REFERENCES admin(id) ON DELETE SET NULL,
+
+    CHECK (is_permanent = TRUE OR expires_at IS NOT NULL)
 );
 
 CREATE TABLE genre (
@@ -50,6 +85,7 @@ CREATE TABLE person_award (
     PRIMARY KEY (person_id, award_id, year)
 );
 
+
 CREATE TABLE media (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -57,11 +93,16 @@ CREATE TABLE media (
     description TEXT,
     imdb_rating NUMERIC(3,1),
     user_rating NUMERIC(3,1),
-    duration INT
+    duration INT,
+    added_by INT REFERENCES admin(id) ON DELETE SET NULL,
+    last_updated_by INT REFERENCES admin(id) ON DELETE SET NULL,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_published BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE movie (
-    id SERIAL PRIMARY KEY, 
+    id SERIAL PRIMARY KEY,
     media_id INT REFERENCES media(id) ON DELETE CASCADE
 );
 
@@ -118,12 +159,11 @@ CREATE TABLE review (
     description VARCHAR(1000),
     upvote INT DEFAULT 0,
     downvote INT DEFAULT 0,
+    is_removed BOOLEAN DEFAULT FALSE,        
+    removed_by INT REFERENCES admin(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CHECK (
-        media_id IS NOT NULL
-        OR season_id IS NOT NULL
-        OR episode_id IS NOT NULL
-    )
+
+    CHECK (num_nonnulls(media_id, season_id, episode_id) <= 1)
 );
 
 CREATE TABLE reply (
@@ -134,12 +174,30 @@ CREATE TABLE reply (
     description VARCHAR(1000),
     upvote INT DEFAULT 0,
     downvote INT DEFAULT 0,
+    is_removed BOOLEAN DEFAULT FALSE,        
+    removed_by INT REFERENCES admin(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-	CHECK(
-    		(parent_review_id IS NOT NULL AND parent_reply_id IS NULL)
- 			OR (parent_review_id IS NULL AND parent_reply_id IS NOT NULL)
-	)
+    CHECK (
+        (parent_review_id IS NOT NULL AND parent_reply_id IS NULL)
+        OR (parent_review_id IS NULL AND parent_reply_id IS NOT NULL)
+    )
+);
+
+
+CREATE TABLE report (
+    id SERIAL PRIMARY KEY,
+    reporter_id INT REFERENCES users(id) ON DELETE SET NULL,
+    review_id INT REFERENCES review(id) ON DELETE CASCADE,
+    reply_id INT REFERENCES reply(id) ON DELETE CASCADE,
+    reason VARCHAR(500),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'resolved', 'dismissed')),
+    actioned_by INT REFERENCES admin(id) ON DELETE SET NULL,
+    actioned_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CHECK (num_nonnulls(review_id, reply_id) = 1)
 );
 
 CREATE TABLE watchlist (
@@ -151,11 +209,11 @@ CREATE TABLE watchlist (
 CREATE TABLE post_attachments (
     post_id INT REFERENCES review(id) ON DELETE CASCADE,
     attachment VARCHAR(500) NOT NULL,
-    PRIMARY KEY (post_id,attachment)
+    PRIMARY KEY (post_id, attachment)
 );
 
 CREATE TABLE reply_attachments (
     reply_id INT REFERENCES reply(id) ON DELETE CASCADE,
     attachment VARCHAR(500) NOT NULL,
-    PRIMARY KEY (reply_id,attachment)
+    PRIMARY KEY (reply_id, attachment)
 );
