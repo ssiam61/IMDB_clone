@@ -1,22 +1,97 @@
 import React, { useEffect, useState } from "react";
 import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
+import CategoryRow from "../components/CategoryRow";
 
 const UserDashboard = () => {
-  const [media, setMedia] = useState([]);
+  const [allMedia, setAllMedia] = useState([]);
+  const [highlyRated, setHighlyRated] = useState([]);
+  const [criticallyAcclaimed, setCriticallyAcclaimed] = useState([]);
+  const [watchlistMedia, setWatchlistMedia] = useState([]);
+  const [awardWinners, setAwardWinners] = useState([]);
+  const [trending, setTrending] = useState([]);
+  const [recommended, setRecommended] = useState([]);
+  const [starStudded, setStarStudded] = useState([]);
 
   useEffect(() => {
-    const fetchMedia = async () => {
+    const fetchEverything = async () => {
       try {
-        const response = await fetch("http://localhost:5000/media");
-        const data = await response.json();
-        setMedia(data);
+        // 1. Get ALL media
+        const mediaRes = await fetch("http://localhost:5000/media");
+        const mediaData = await mediaRes.json();
+        setAllMedia(mediaData);
+
+        // 2. HIGHLY RATED (by user_rating)
+        setHighlyRated([...mediaData].sort((a, b) => b.user_rating - a.user_rating));
+
+        // 3. CRITICALLY ACCLAIMED (by imdb_rating)
+        setCriticallyAcclaimed([...mediaData].sort((a, b) => b.imdb_rating - a.imdb_rating));
+
+        // 4. WATCHLIST (user_id = 1 for now)
+        const wlRes = await fetch("http://localhost:5000/watchlist");
+        const wlData = await wlRes.json();
+        const userId = 1;
+        const filteredWL = wlData.filter(w => w.user_id === userId).map(w => w.media_id);
+        setWatchlistMedia(mediaData.filter(m => filteredWL.includes(m.id)));
+
+        // 5. AWARD WINNERS
+        const awardRes = await fetch("http://localhost:5000/media_award");
+        const awardData = await awardRes.json();
+        const awardMediaIds = [...new Set(awardData.map(a => a.media_id))];
+        setAwardWinners(mediaData.filter(m => awardMediaIds.includes(m.id)));
+
+        // 6. TRENDING (by review count)
+        const reviewRes = await fetch("http://localhost:5000/review");
+        const reviewData = await reviewRes.json();
+
+        const reviewCount = {};
+        reviewData.forEach(r => {
+          if (!reviewCount[r.media_id]) reviewCount[r.media_id] = 0;
+          reviewCount[r.media_id]++;
+        });
+
+        setTrending(
+          [...mediaData].sort(
+            (a, b) => (reviewCount[b.id] || 0) - (reviewCount[a.id] || 0)
+          )
+        );
+
+        // 7. RECOMMENDED (genre preferences)
+        const prefRes = await fetch("http://localhost:5000/preference");
+        const prefData = await prefRes.json();
+        const userPrefGenres = prefData.filter(p => p.user_id === userId).map(p => p.genre_id);
+
+        const mgRes = await fetch("http://localhost:5000/media_genre");
+        const mgData = await mgRes.json();
+
+        const recommendedIds = mgData
+          .filter(mg => userPrefGenres.includes(mg.genre_id))
+          .map(mg => mg.media_id);
+
+        setRecommended(mediaData.filter(m => recommendedIds.includes(m.id)));
+
+        // 8. STAR STUDDED
+        const fanRes = await fetch("http://localhost:5000/fan");
+        const fanData = await fanRes.json();
+        const userFanActors = fanData.filter(f => f.user_id === userId).map(f => f.person_id);
+
+        const mpRes = await fetch("http://localhost:5000/media_personality");
+        const mpData = await mpRes.json();
+
+        const starredMedia = [...new Set(
+          mpData
+            .filter(mp => userFanActors.includes(mp.person_id))
+            .map(mp => mp.media_id)
+        )];
+
+        setStarStudded(mediaData.filter(m => starredMedia.includes(m.id)));
+
       } catch (err) {
-        console.error("Error fetching media:", err);
+        console.error(err);
       }
     };
 
-    fetchMedia();
+    fetchEverything();
   }, []);
 
   return (
@@ -39,7 +114,7 @@ const UserDashboard = () => {
           </form>
         </div>
 
-        {/* MULTI‑ROW MAIN MOVIE GRID (vertical scroll) */}
+        {/* MULTI‑ROW MAIN MEDIA GRID */}
         <div 
           style={{
             maxHeight: "400px",
@@ -47,48 +122,27 @@ const UserDashboard = () => {
             paddingRight: "10px"
           }}
         >
-        <div
+          <div
             className="d-flex flex-wrap justify-content-start"
-            style={{
-                gap: "20px"   // ← this WILL work regardless of Bootstrap version
-            }}
-        >
-
-            {media.map((item) => (
+            style={{ gap: "20px" }}
+          >
+            {allMedia.map((item) => (
               <MediaCard key={item.id} title={item.name} />
             ))}
           </div>
         </div>
 
-        {/* HORIZONTAL SCROLL SECTIONS */}
         <hr className="my-4" />
 
-        {[
-          "Highly Rated",
-          "Critically Acclaimed",
-          "From your Watchlist",
-          "Award Winners",
-          "Trending",
-          "Recommended for You",
-          "Star Studded"
-        ].map((category) => (
-          <div key={category} className="mb-4">
-            <h5 className="mb-2">{category}</h5>
+        {/* CATEGORIES */}
+        <CategoryRow title="Highly Rated" list={highlyRated} />
+        <CategoryRow title="Critically Acclaimed" list={criticallyAcclaimed} />
+        <CategoryRow title="From Your Watchlist" list={watchlistMedia} />
+        <CategoryRow title="Award Winners" list={awardWinners} />
+        <CategoryRow title="Trending" list={trending} />
+        <CategoryRow title="Recommended For You" list={recommended} />
+        <CategoryRow title="Star Studded" list={starStudded} />
 
-            <div
-              style={{
-                display: "flex",
-                overflowX: "auto",
-                gap: "15px",
-                paddingBottom: "10px"
-              }}
-            >
-              {media.slice(0, 10).map((item) => (
-                <MediaCard key={`${category}-${item.id}`} title={item.name} />
-              ))}
-            </div>
-          </div>
-        ))}
       </div>
     </>
   );
