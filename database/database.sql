@@ -255,3 +255,11 @@ CREATE TABLE reply_attachments (
     attachment VARCHAR(500) NOT NULL,
     PRIMARY KEY (reply_id, attachment)
 );
+
+CREATE TABLE review_vote (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    review_id INT REFERENCES review(id) ON DELETE CASCADE,
+    vote_type VARCHAR(10) CHECK (vote_type IN ('upvote', 'downvote')),
+    UNIQUE (user_id, review_id)
+);
