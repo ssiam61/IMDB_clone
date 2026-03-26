@@ -5,19 +5,17 @@ import MediaCard from "../components/MediaCard";
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [watchlist, setWatchlist] = useState([]);
-  const [activeTab, setActiveTab] = useState("posts"); // "posts", "reviews", "replies"
-
-  const userId = 1; // <-- TEMP until login persistence
+  const [activeTab, setActiveTab] = useState("posts");
+  const userId = 1;
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // 1️⃣ Fetch user info
         const resUser = await fetch(`http://localhost:5000/users/${userId}`);
         const userData = await resUser.json();
         setUser(userData);
 
-        // 2️⃣ Fetch watchlist
+
         const wlRes = await fetch("http://localhost:5000/watchlist");
         const wlData = await wlRes.json();
 
@@ -25,7 +23,7 @@ const Profile = () => {
           .filter((w) => w.user_id === userId)
           .map((w) => w.media_id);
 
-        // fetch all media
+
         const mediaRes = await fetch("http://localhost:5000/media");
         const mediaData = await mediaRes.json();
 
@@ -44,7 +42,7 @@ const Profile = () => {
 
       <div className="container mt-4">
 
-        {/* ✅ Profile Picture */}
+        {}
         <div className="d-flex justify-content-center mb-3">
           <img
             src="/images/placeholder.jpg"
@@ -59,7 +57,7 @@ const Profile = () => {
           />
         </div>
 
-        {/* ✅ User Info Box */}
+        {}
         <div className="p-4 bg-light shadow-sm rounded mb-3">
           {user ? (
             <>
@@ -77,7 +75,7 @@ const Profile = () => {
           )}
         </div>
 
-        {/* ✅ Watchlist Row */}
+        {}
         <h5 className="mt-4">Your Watchlist</h5>
 
         <div
@@ -101,7 +99,7 @@ const Profile = () => {
 
         <hr />
 
-        {/* ✅ Posts/Reviews/Replies Switch Tabs */}
+        {}
         <div className="d-flex justify-content-center mb-3">
           <button
             className={
@@ -134,9 +132,9 @@ const Profile = () => {
           </button>
         </div>
 
-        {/* ✅ Content Box */}
+        {}
         <div className="p-4 bg-light shadow-sm rounded" style={{ minHeight: "200px" }}>
-          {/* Later this will show actual posts/reviews/replies */}
+          {}
           <p className="text-muted text-center mt-5">
             No content yet — coming soon.
           </p>
