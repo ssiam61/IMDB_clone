@@ -239,9 +239,11 @@ CREATE TABLE report (
 -- ─────────────────────────────────────────────
 
 CREATE TABLE watchlist (
+    id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
     media_id INT REFERENCES media(id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, media_id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, media_id)
 );
 
 CREATE TABLE post_attachments (
