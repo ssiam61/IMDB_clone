@@ -1,5 +1,7 @@
 import { getAllMedia, getMediaById } from "../services/mediaService.js";
 
+import { getFullMediaById } from "../services/mediaService.js";
+
 export const getAllMediaController = async (req, res) => {
   try {
     const media = await getAllMedia();
@@ -17,6 +19,20 @@ export const getMediaByIdController = async (req, res) => {
       return res.status(404).json({ message: "Media not found" });
     }
     res.json(media);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+export const getFullMediaByIdController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await getFullMediaById(id);
+    if (!result) {
+      return res.status(404).json({ message: "Media not found" });
+    }
+    res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
