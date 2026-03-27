@@ -16,18 +16,14 @@ const UserDashboard = () => {
   useEffect(() => {
     const fetchEverything = async () => {
       try {
-        // 1. Get ALL media
         const mediaRes = await fetch("http://localhost:5000/media");
         const mediaData = await mediaRes.json();
         setAllMedia(mediaData);
 
-        // 2. HIGHLY RATED (by user_rating)
         setHighlyRated([...mediaData].sort((a, b) => b.user_rating - a.user_rating));
 
-        // 3. CRITICALLY ACCLAIMED (by imdb_rating)
         setCriticallyAcclaimed([...mediaData].sort((a, b) => b.imdb_rating - a.imdb_rating));
 
-        // 4. WATCHLIST (user_id = 1 for now)
         const wlRes = await fetch("http://localhost:5000/watchlist");
         const wlData = await wlRes.json();
         const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -35,13 +31,11 @@ const UserDashboard = () => {
         const filteredWL = wlData.filter(w => w.user_id === userId).map(w => w.media_id);
         setWatchlistMedia(mediaData.filter(m => filteredWL.includes(m.id)));
 
-        // 5. AWARD WINNERS
         const awardRes = await fetch("http://localhost:5000/media_award");
         const awardData = await awardRes.json();
         const awardMediaIds = [...new Set(awardData.map(a => a.media_id))];
         setAwardWinners(mediaData.filter(m => awardMediaIds.includes(m.id)));
 
-        // 6. TRENDING (by review count)
         const reviewRes = await fetch("http://localhost:5000/review");
         const reviewData = await reviewRes.json();
 
@@ -57,7 +51,6 @@ const UserDashboard = () => {
           )
         );
 
-        // 7. RECOMMENDED (genre preferences)
         const prefRes = await fetch("http://localhost:5000/preference");
         const prefData = await prefRes.json();
         const userPrefGenres = prefData.filter(p => p.user_id === userId).map(p => p.genre_id);
@@ -71,7 +64,6 @@ const UserDashboard = () => {
 
         setRecommended(mediaData.filter(m => recommendedIds.includes(m.id)));
 
-        // 8. STAR STUDDED
         const fanRes = await fetch("http://localhost:5000/fan");
         const fanData = await fanRes.json();
         const userFanActors = fanData.filter(f => f.user_id === userId).map(f => f.person_id);
@@ -101,7 +93,7 @@ const UserDashboard = () => {
 
       <div className="container mt-4">
 
-        {/* SORT + SEARCH */}
+        {}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <button className="btn btn-outline-primary">Sort</button>
 
@@ -115,7 +107,7 @@ const UserDashboard = () => {
           </form>
         </div>
 
-        {/* MULTI‑ROW MAIN MEDIA GRID */}
+        {}
         <div 
           style={{
             maxHeight: "400px",
@@ -128,14 +120,14 @@ const UserDashboard = () => {
             style={{ gap: "20px" }}
           >
             {allMedia.map((item) => (
-              <MediaCard key={item.id} title={item.name} />
+              <MediaCard key={item.id} id={item.id} title={item.name} />
             ))}
           </div>
         </div>
 
         <hr className="my-4" />
 
-        {/* CATEGORIES */}
+        {}
         <CategoryRow title="Highly Rated" list={highlyRated} />
         <CategoryRow title="Critically Acclaimed" list={criticallyAcclaimed} />
         <CategoryRow title="From Your Watchlist" list={watchlistMedia} />

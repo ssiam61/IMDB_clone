@@ -91,7 +91,7 @@ const Profile = () => {
         >
           {watchlist.length > 0 ? (
             watchlist.map((item) => (
-              <MediaCard key={item.id} title={item.name} />
+              <MediaCard key={item.id} id={item.id} title={item.name} />
             ))
           ) : (
             <p className="text-muted">No items in watchlist</p>

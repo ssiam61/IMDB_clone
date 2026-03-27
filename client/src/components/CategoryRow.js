@@ -19,7 +19,11 @@ const CategoryRow = ({ title, list }) => {
         }}
       >
         {list.map((item) => (
-          <MediaCard key={`${title}-${item.id}`} title={item.name} />
+          <MediaCard
+            key={`${title}-${item.id}`}
+            id={item.id}
+            title={item.name}
+          />
         ))}
       </div>
     </div>
