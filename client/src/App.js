@@ -9,6 +9,9 @@ import PersonPage from "./pages/PersonPage";
 import Posts from "./pages/Posts";
 import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
+import SeasonPage from "./pages/SeasonPage";
+import EpisodePage from "./pages/EpisodePage";
+
 
 function App() {
   return (
@@ -26,6 +29,8 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/person/:id" element={<PersonPage />} />
+        <Route path="/season/:id" element={<SeasonPage />} />
+        <Route path="/episode/:id" element={<EpisodePage />} />
 
         {}
         <Route path="/admin-dashboard" element={<AdminDashboard />} />

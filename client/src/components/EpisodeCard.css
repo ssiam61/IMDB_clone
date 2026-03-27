@@ -1,0 +1,11 @@
+.episode-card {
+  transition: transform 0.15s ease;
+}
+
+.episode-card:hover {
+  transform: scale(1.05);
+}
+
+.episode-card:active {
+  transform: scale(0.95);
+}

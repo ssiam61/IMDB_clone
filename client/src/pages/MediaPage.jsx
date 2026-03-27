@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
 import AwardCard from "../components/AwardCard";
+import SeasonCard from "../components/SeasonCard";
 
 const MediaPage = () => {
   const { id } = useParams();
@@ -187,24 +188,11 @@ const MediaPage = () => {
             }}
             >
             {seasons.map((season) => (
-                <div
-                key={season.id}
-                className="shadow-sm p-3 rounded"
-                style={{
-                    width: "150px",
-                    cursor: "pointer",
-                    transition: "transform 0.15s ease"
-                }}
-                onClick={() => {}}
-                onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.95)")}
-                onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
-                >
-                <h6 className="text-center">Season {season.number}</h6>
-                </div>
+                <SeasonCard key={season.id} season={season} />
             ))}
             </div>
         </>
-        )}       
+        )}
 
         <hr />
 
