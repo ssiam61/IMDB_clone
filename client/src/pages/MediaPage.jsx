@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
+import AwardCard from "../components/AwardCard";
 
 const MediaPage = () => {
   const { id } = useParams();
@@ -11,6 +12,8 @@ const MediaPage = () => {
   const [reviewText, setReviewText] = useState("");
   const [reviewStars, setReviewStars] = useState(0);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [awards, setAwards] = useState([]);
+  const [seasons, setSeasons] = useState([]);
 
   useEffect(() => {
     const loadMedia = async () => {
@@ -38,6 +41,35 @@ const MediaPage = () => {
 
         setDirectors(directorData);
         setCast(castData);
+
+        const awardRes = await fetch("http://localhost:5000/media_award");
+        const awardData = await awardRes.json();
+
+        const awardInfoRes = await fetch("http://localhost:5000/award");
+        const awardInfo = await awardInfoRes.json();
+
+        const awardList = awardData
+        .filter(a => a.media_id == id)
+        .map(a => ({
+            ...awardInfo.find(info => info.id === a.award_id),
+            year: a.year
+        }))
+        .filter(Boolean);
+
+        setAwards(awardList);
+
+        const seriesRes = await fetch("http://localhost:5000/series");
+        const seriesData = await seriesRes.json();
+
+        const thisSeries = seriesData.find(s => s.media_id == id);
+
+        if (thisSeries) {
+            const seasonRes = await fetch("http://localhost:5000/season");
+            const seasonData = await seasonRes.json();
+
+            const filtered = seasonData.filter(season => season.series_id === thisSeries.id);
+            setSeasons(filtered);
+        }
       } catch (err) {
         console.error("Error loading media page:", err);
       }
@@ -119,6 +151,60 @@ const MediaPage = () => {
         )}
         </div>
 
+        {awards.length > 0 && (
+        <>
+            <hr />
+            <h4>Awards</h4>
+            <div
+            style={{
+                display: "flex",
+                overflowX: "auto",
+                gap: "20px",
+                paddingBottom: "10px",
+                paddingTop: "5px",
+                whiteSpace: "nowrap"
+            }}
+            >
+            {awards.map((a, index) => (
+                <AwardCard key={`award-${index}`} award={a} />
+            ))}
+            </div>
+        </>
+        )}
+
+        {seasons.length > 0 && (
+        <>
+            <hr />
+            <h4>Seasons</h4>
+            <div
+            style={{
+                display: "flex",
+                overflowX: "auto",
+                gap: "20px",
+                paddingBottom: "10px",
+                paddingTop: "5px",
+                whiteSpace: "nowrap"
+            }}
+            >
+            {seasons.map((season) => (
+                <div
+                key={season.id}
+                className="shadow-sm p-3 rounded"
+                style={{
+                    width: "150px",
+                    cursor: "pointer",
+                    transition: "transform 0.15s ease"
+                }}
+                onClick={() => {}}
+                onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.95)")}
+                onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                >
+                <h6 className="text-center">Season {season.number}</h6>
+                </div>
+            ))}
+            </div>
+        </>
+        )}       
 
         <hr />
 
