@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import MovieDetail from "./moviedetail";
+import SeriesDetail from "./seriesdetail";
 import ReviewList from "./reviewlist";
 import ReviewForm from "./reviewform";
 import CommentList from "./commentlist";
 import CommentForm from "./commentform";
 
-const MovieDetailPage = () => {
+const SeriesDetailPage = () => {
   const { id } = useParams();
-  const [movie, setMovie] = useState(null);
+  const [series, setSeries] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [reviews, setReviews] = useState([]);
@@ -18,21 +18,24 @@ const MovieDetailPage = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/media/${id}`);
-        if (!response.ok) throw new Error("Movie not found");
-        const data = await response.json();
-        setMovie(data);
+        // Get series by id, then fetch media info
+        const seriesRes = await fetch(`http://localhost:5000/series/${id}`);
+        const seriesObj = await seriesRes.json();
+        if (!seriesObj || !seriesObj.media_id) throw new Error();
+        const mediaRes = await fetch(`http://localhost:5000/media/${seriesObj.media_id}`);
+        const mediaObj = await mediaRes.json();
+        setSeries({ ...seriesObj, ...mediaObj });
         // Fetch reviews for this media
         const reviewsRes = await fetch("http://localhost:5000/review");
         const allReviews = await reviewsRes.json();
-        const movieReviews = allReviews.filter(r => r.media_id === data.id);
-        setReviews(movieReviews);
+        const seriesReviews = allReviews.filter(r => r.media_id === mediaObj.id);
+        setReviews(seriesReviews);
         // Fetch all comments (replies)
         const commentsRes = await fetch("http://localhost:5000/reply");
         const allComments = await commentsRes.json();
         setComments(allComments);
       } catch (err) {
-        setError("Could not load movie.");
+        setError("Could not load series.");
       } finally {
         setLoading(false);
       }
@@ -49,7 +52,7 @@ const MovieDetailPage = () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: user.id,
-        media_id: movie.id,
+        media_id: series.media_id,
         star_point: rating,
         description: text
       })
@@ -57,7 +60,7 @@ const MovieDetailPage = () => {
     // Refresh reviews
     const reviewsRes = await fetch("http://localhost:5000/review");
     const allReviews = await reviewsRes.json();
-    setReviews(allReviews.filter(r => r.media_id === movie.id));
+    setReviews(allReviews.filter(r => r.media_id === series.media_id));
   };
 
   const handleCommentSubmit = async ({ text }) => {
@@ -82,7 +85,7 @@ const MovieDetailPage = () => {
 
   return (
     <div>
-      <MovieDetail movie={movie} />
+      <SeriesDetail series={series} />
       <div className="mt-4">
         <h4>Reviews</h4>
         <ReviewForm onSubmit={handleReviewSubmit} />
@@ -127,4 +130,4 @@ const MovieDetailPage = () => {
   );
 };
 
-export default MovieDetailPage;
+export default SeriesDetailPage;

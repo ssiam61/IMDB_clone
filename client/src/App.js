@@ -22,6 +22,7 @@ import UserDashboard from "./pages/userDashboard";
 import AdminDashboard from "./pages/adminDashboard";
 import Movies from "./componenets/movies";
 import MovieDetailPage from "./componenets/moviedetailpage";
+import SeriesDetailPage from "./componenets/seriesdetailpage";
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/movies" element={<Movies />} />
         <Route path="/movies/:id" element={<MovieDetailPage />} />
+        <Route path="/series/:id" element={<SeriesDetailPage />} />
       </Routes>
     </BrowserRouter>
   );
