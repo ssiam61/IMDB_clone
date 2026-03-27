@@ -6,7 +6,8 @@ const Profile = () => {
   const [user, setUser] = useState(null);
   const [watchlist, setWatchlist] = useState([]);
   const [activeTab, setActiveTab] = useState("posts");
-  const userId = 1;
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+  const userId = storedUser?.id;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -45,7 +46,7 @@ const Profile = () => {
         {}
         <div className="d-flex justify-content-center mb-3">
           <img
-            src="/images/placeholder.jpg"
+            src="/images/placeholder.png"
             alt="profile"
             style={{
               width: "150px",

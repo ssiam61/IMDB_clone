@@ -30,7 +30,8 @@ const UserDashboard = () => {
         // 4. WATCHLIST (user_id = 1 for now)
         const wlRes = await fetch("http://localhost:5000/watchlist");
         const wlData = await wlRes.json();
-        const userId = 1;
+        const storedUser = JSON.parse(localStorage.getItem("user"));
+        const userId = storedUser?.id;
         const filteredWL = wlData.filter(w => w.user_id === userId).map(w => w.media_id);
         setWatchlistMedia(mediaData.filter(m => filteredWL.includes(m.id)));
 

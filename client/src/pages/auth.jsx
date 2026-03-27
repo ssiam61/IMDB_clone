@@ -24,6 +24,7 @@ const Auth = () => {
           setError("Invalid username or password");
           return;
         }
+        localStorage.setItem("user", JSON.stringify(found));
 
         if (role === "admin") {
           const adminsRes = await fetch("http://localhost:5000/admin");
@@ -68,6 +69,7 @@ const Auth = () => {
         });
 
         const createdUser = await createdRes.json();
+        localStorage.setItem("user", JSON.stringify(createdUser));
 
         if (role === "admin") {
           await fetch("http://localhost:5000/admin", {
