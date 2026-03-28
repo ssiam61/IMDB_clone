@@ -17,6 +17,89 @@ router.get("/:id", async (req, res) => {
   res.json(result.rows[0]);
 });
 
+// GET complete media details (with genres, cast, awards, reviews)
+router.get("/:id/full", async (req, res) => {
+  try {
+    const mediaId = req.params.id;
+    
+    // Get basic media info
+    const mediaRes = await pool.query(
+      "SELECT * FROM media WHERE id=$1",
+      [mediaId]
+    );
+    const media = mediaRes.rows[0];
+    if (!media) return res.status(404).json({ error: "Media not found" });
+
+    // Get genres
+    const genresRes = await pool.query(
+      `SELECT g.id, g.name FROM genre g
+       INNER JOIN media_genre mg ON g.id = mg.genre_id
+       WHERE mg.media_id = $1`,
+      [mediaId]
+    );
+    const genres = genresRes.rows;
+
+    // Get cast and crew
+    const castRes = await pool.query(
+      `SELECT p.id, p.name, p.picture, p.biography, mp.role
+       FROM person p
+       INNER JOIN media_personality mp ON p.id = mp.person_id
+       WHERE mp.media_id = $1
+       ORDER BY mp.role`,
+      [mediaId]
+    );
+    const cast = castRes.rows;
+
+    // Organize cast by role
+    const castByRole = {
+      actors: cast.filter(c => c.role === 'actor'),
+      directors: cast.filter(c => c.role === 'director'),
+      writers: cast.filter(c => c.role === 'writer'),
+      producers: cast.filter(c => c.role === 'producer')
+    };
+
+    // Get awards
+    const awardsRes = await pool.query(
+      `SELECT a.id, a.name, a.awarded_by, a.prize_money, ma.year
+       FROM award a
+       INNER JOIN media_award ma ON a.id = ma.award_id
+       WHERE ma.media_id = $1
+       ORDER BY ma.year DESC`,
+      [mediaId]
+    );
+    const awards = awardsRes.rows;
+
+    // Get review statistics
+    const reviewsRes = await pool.query(
+      `SELECT 
+         COUNT(*) as review_count,
+         AVG(star_point) as avg_rating,
+         SUM(CASE WHEN star_point > 5 THEN 1 ELSE 0 END) as positive_count
+       FROM review 
+       WHERE media_id = $1 AND is_removed = FALSE`,
+      [mediaId]
+    );
+    const reviewStats = reviewsRes.rows[0];
+
+    // Combine all data
+    const completeData = {
+      ...media,
+      genres,
+      cast: castByRole,
+      awards,
+      reviewStats: {
+        totalReviews: parseInt(reviewStats.review_count) || 0,
+        avgUserRating: reviewStats.avg_rating ? parseFloat(reviewStats.avg_rating).toFixed(1) : null,
+        positiveReviews: parseInt(reviewStats.positive_count) || 0
+      }
+    };
+
+    res.json(completeData);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // CREATE media
 router.post("/", async (req, res) => {
   const {

@@ -18,7 +18,8 @@ const MovieDetailPage = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/media/${id}`);
+        // Fetch complete media details with genres, cast, awards
+        const response = await fetch(`http://localhost:5000/media/${id}/full`);
         if (!response.ok) throw new Error("Movie not found");
         const data = await response.json();
         setMovie(data);

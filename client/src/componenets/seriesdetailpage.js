@@ -18,18 +18,22 @@ const SeriesDetailPage = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        // Get series by id, then fetch media info
+        // Get series by id to get the media_id
         const seriesRes = await fetch(`http://localhost:5000/series/${id}`);
         const seriesObj = await seriesRes.json();
         if (!seriesObj || !seriesObj.media_id) throw new Error();
-        const mediaRes = await fetch(`http://localhost:5000/media/${seriesObj.media_id}`);
+        
+        // Fetch complete media details with genres, cast, awards
+        const mediaRes = await fetch(`http://localhost:5000/media/${seriesObj.media_id}/full`);
         const mediaObj = await mediaRes.json();
         setSeries({ ...seriesObj, ...mediaObj });
+        
         // Fetch reviews for this media
         const reviewsRes = await fetch("http://localhost:5000/review");
         const allReviews = await reviewsRes.json();
         const seriesReviews = allReviews.filter(r => r.media_id === mediaObj.id);
         setReviews(seriesReviews);
+        
         // Fetch all comments (replies)
         const commentsRes = await fetch("http://localhost:5000/reply");
         const allComments = await commentsRes.json();
