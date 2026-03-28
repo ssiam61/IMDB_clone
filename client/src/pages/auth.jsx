@@ -11,86 +11,37 @@ const Auth = () => {
     e.preventDefault();
     setError("");
 
-    if (mode === "login") {
-      try {
-        const response = await fetch("http://localhost:5000/users");
-        const users = await response.json();
+    const endpoint =
+      mode === "login"
+        ? "http://localhost:5000/api/auth/login"
+        : "http://localhost:5000/api/auth/signup";
 
-        const found = users.find(
-          (u) => u.username === username && u.password === password
-        );
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password, role }),
+      });
 
-        if (!found) {
-          setError("Invalid username or password");
-          return;
-        }
-        localStorage.setItem("user", JSON.stringify(found));
+      const data = await response.json();
 
-        if (role === "admin") {
-          const adminsRes = await fetch("http://localhost:5000/admin");
-          const admins = await adminsRes.json();
-          const isAdmin = admins.find((a) => a.user_id === found.id);
-
-          if (!isAdmin) {
-            setError("This user is not an admin.");
-            return;
-          }
-
-          window.location.href = "/admin-dashboard";
-        } else {
-          window.location.href = "/user-dashboard";
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Something went wrong");
+      if (!data.success) {
+        setError(data.error || "Something went wrong");
+        return;
       }
-    } 
-    else {
-      try {
-        const response = await fetch("http://localhost:5000/users");
-        const users = await response.json();
 
-        const exists = users.find((u) => u.username === username);
-        if (exists) {
-          setError("Username already taken");
-          return;
-        }
+      // Save user
+      localStorage.setItem("user", JSON.stringify(data.user));
 
-        const createdRes = await fetch("http://localhost:5000/users", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            username,
-            name: username,
-            email: `${username}@example.com`,
-            password,
-            profile_picture: "",
-          }),
-        });
-
-        const createdUser = await createdRes.json();
-        localStorage.setItem("user", JSON.stringify(createdUser));
-
-        if (role === "admin") {
-          await fetch("http://localhost:5000/admin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              user_id: createdUser.id,
-              role: "moderator",
-              granted_by: null
-            })
-          });
-
-          window.location.href = "/admin-dashboard";
-        } else {
-          window.location.href = "/user-dashboard";
-        }
-
-      } catch (err) {
-        console.error(err);
-        setError("Something went wrong");
+      // Redirect based on backend response
+      if (data.isAdmin) {
+        window.location.href = "/admin-dashboard";
+      } else {
+        window.location.href = "/user-dashboard";
       }
+    } catch (err) {
+      console.error(err);
+      setError("Server error");
     }
   };
 
@@ -100,8 +51,6 @@ const Auth = () => {
       style={{ height: "100vh" }}
     >
       <div className="p-4 shadow rounded" style={{ width: "350px" }}>
-        
-        {}
         <div className="d-flex mb-3">
           <button
             className={`btn flex-fill ${
@@ -128,10 +77,8 @@ const Auth = () => {
           </button>
         </div>
 
-        {}
         {error && <p className="text-danger text-center">{error}</p>}
 
-        {}
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <label>Username</label>
@@ -155,7 +102,6 @@ const Auth = () => {
             />
           </div>
 
-          {}
           <div className="mb-3">
             <label>Role</label>
             <select

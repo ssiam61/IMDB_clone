@@ -7,69 +7,29 @@ import SeasonCard from "../components/SeasonCard";
 
 const MediaPage = () => {
   const { id } = useParams();
+
   const [media, setMedia] = useState(null);
-  const [cast, setCast] = useState([]);
   const [directors, setDirectors] = useState([]);
+  const [cast, setCast] = useState([]);
+  const [awards, setAwards] = useState([]);
+  const [seasons, setSeasons] = useState([]);
+
   const [reviewText, setReviewText] = useState("");
   const [reviewStars, setReviewStars] = useState(0);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
-  const [awards, setAwards] = useState([]);
-  const [seasons, setSeasons] = useState([]);
 
   useEffect(() => {
     const loadMedia = async () => {
       try {
-        const mediaRes = await fetch(`http://localhost:5000/media/${id}`);
-        const mediaData = await mediaRes.json();
-        setMedia(mediaData);
+        const res = await fetch(`http://localhost:5000/api/media/full/${id}`);
+        const data = await res.json();
 
-        const mpRes = await fetch("http://localhost:5000/media_personality");
-        const mpData = await mpRes.json();
-
-        const personRes = await fetch("http://localhost:5000/person");
-        const personData = await personRes.json();
-
-        const directorLinks = mpData.filter(m => m.media_id == id && m.role === "director");
-        const castLinks = mpData.filter(m => m.media_id == id && m.role === "actor");
-
-        const directorData = directorLinks
-        .map(link => personData.find(p => p.id === link.person_id))
-        .filter(Boolean);
-
-        const castData = castLinks
-        .map(link => personData.find(p => p.id === link.person_id))
-        .filter(Boolean);
-
-        setDirectors(directorData);
-        setCast(castData);
-
-        const awardRes = await fetch("http://localhost:5000/media_award");
-        const awardData = await awardRes.json();
-
-        const awardInfoRes = await fetch("http://localhost:5000/award");
-        const awardInfo = await awardInfoRes.json();
-
-        const awardList = awardData
-        .filter(a => a.media_id == id)
-        .map(a => ({
-            ...awardInfo.find(info => info.id === a.award_id),
-            year: a.year
-        }))
-        .filter(Boolean);
-
-        setAwards(awardList);
-
-        const seriesRes = await fetch("http://localhost:5000/series");
-        const seriesData = await seriesRes.json();
-
-        const thisSeries = seriesData.find(s => s.media_id == id);
-
-        if (thisSeries) {
-            const seasonRes = await fetch("http://localhost:5000/season");
-            const seasonData = await seasonRes.json();
-
-            const filtered = seasonData.filter(season => season.series_id === thisSeries.id);
-            setSeasons(filtered);
+        if (data.success) {
+          setMedia(data.media);
+          setDirectors(data.directors);
+          setCast(data.cast);
+          setAwards(data.awards);
+          setSeasons(data.seasons);
         }
       } catch (err) {
         console.error("Error loading media page:", err);
@@ -88,8 +48,8 @@ const MediaPage = () => {
       <div className="container mt-4">
         <div className="text-center">
           <img
-            src="/images/placeholder.png"
-            alt="media"
+            src={media.thumbnail || "/images/placeholder.png"}
+            alt={media.name}
             style={{
               width: "260px",
               height: "360px",
@@ -105,93 +65,108 @@ const MediaPage = () => {
           <p><strong>IMDB Rating:</strong> {media.imdb_rating}</p>
           <p><strong>User Rating:</strong> {media.user_rating}</p>
           <p><strong>Duration:</strong> {media.duration} min</p>
-          <p><strong>Teaser Link:</strong> <a href={media.teaser_link} target="_blank">{media.teaser_link}</a></p>
-          <p><strong>Description:</strong></p>
+
+          <p><strong>Teaser Link:</strong></p>
+          <a href={media.teaser_link} target="_blank" rel="noreferrer">
+            {media.teaser_link}
+          </a>
+
+          <p className="mt-3"><strong>Description:</strong></p>
           <p>{media.description}</p>
         </div>
 
         <h4 className="mt-4">Director{directors.length > 1 ? "s" : ""}</h4>
         <div
-        style={{
+          style={{
             display: "flex",
             overflowX: "auto",
             gap: "20px",
             paddingBottom: "10px",
             paddingTop: "5px",
             whiteSpace: "nowrap"
-        }}
+          }}
         >
-        {directors.length > 0 ? (
-            directors.map(dir => (
-            <MediaCard key={dir.id} id={dir.id} title={dir.name} />
+          {directors.length > 0 ? (
+            directors.map((dir) => (
+              <MediaCard
+                id={dir.id}
+                title={dir.name}
+                type="person"
+                image={dir.profile_image}
+              />
             ))
-        ) : (
-            <p>No director information available</p>
-        )}
+          ) : (
+            <p>No directors available</p>
+          )}
         </div>
 
         <hr />
 
         <h4>Cast</h4>
         <div
-        style={{
+          style={{
             display: "flex",
             overflowX: "auto",
             gap: "20px",
             paddingBottom: "10px",
             paddingTop: "5px",
             whiteSpace: "nowrap"
-        }}
+          }}
         >
-        {cast.length > 0 ? (
-            cast.map(actor => (
-            <MediaCard key={actor.id} id={actor.id} title={actor.name} type="person" />
+          {cast.length > 0 ? (
+            cast.map((actor) => (
+              <MediaCard
+                id={actor.id}
+                title={actor.name}
+                type="person"
+                image={actor.profile_image}
+              />
             ))
-        ) : (
+          ) : (
             <p>No cast available</p>
-        )}
+          )}
         </div>
 
         {awards.length > 0 && (
-        <>
+          <>
             <hr />
             <h4>Awards</h4>
             <div
-            style={{
+              style={{
                 display: "flex",
                 overflowX: "auto",
                 gap: "20px",
                 paddingBottom: "10px",
                 paddingTop: "5px",
                 whiteSpace: "nowrap"
-            }}
+              }}
             >
-            {awards.map((a, index) => (
-                <AwardCard key={`award-${index}`} award={a} />
-            ))}
+              {awards.map((a, idx) => (
+                <AwardCard key={idx} award={a} />
+              ))}
             </div>
-        </>
+          </>
         )}
 
         {seasons.length > 0 && (
-        <>
+          <>
             <hr />
             <h4>Seasons</h4>
             <div
-            style={{
+              style={{
                 display: "flex",
                 overflowX: "auto",
                 gap: "20px",
                 paddingBottom: "10px",
                 paddingTop: "5px",
                 whiteSpace: "nowrap"
-            }}
+              }}
             >
-            {seasons.map((season) => (
+              {seasons.map((season) => (
                 <SeasonCard key={season.id} season={season} />
-            ))}
+              ))}
             </div>
-        </>
+          </>
         )}
 
         <hr />
@@ -208,7 +183,7 @@ const MediaPage = () => {
               onChange={(e) => setReviewStars(parseInt(e.target.value))}
             >
               <option value="0">Select…</option>
-              {[1,2,3,4,5,6,7,8,9,10].map(n => (
+              {[1,2,3,4,5,6,7,8,9,10].map((n) => (
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
@@ -219,11 +194,11 @@ const MediaPage = () => {
               rows="3"
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
-              placeholder="Write something…"
             ></textarea>
 
             <label>Attachments</label>
             <input type="file" className="form-control mb-3" multiple disabled />
+
             <button
               className="btn btn-primary"
               onClick={() => setReviewSubmitted(true)}
@@ -238,7 +213,6 @@ const MediaPage = () => {
         <hr />
         <h4>Reviews</h4>
         <p className="text-muted">No reviews yet — coming soon.</p>
-
       </div>
     </>
   );

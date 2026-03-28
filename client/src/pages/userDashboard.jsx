@@ -14,77 +14,30 @@ const UserDashboard = () => {
   const [starStudded, setStarStudded] = useState([]);
 
   useEffect(() => {
-    const fetchEverything = async () => {
+    const fetchHome = async () => {
       try {
-        const mediaRes = await fetch("http://localhost:5000/media");
-        const mediaData = await mediaRes.json();
-        setAllMedia(mediaData);
-
-        setHighlyRated([...mediaData].sort((a, b) => b.user_rating - a.user_rating));
-
-        setCriticallyAcclaimed([...mediaData].sort((a, b) => b.imdb_rating - a.imdb_rating));
-
-        const wlRes = await fetch("http://localhost:5000/watchlist");
-        const wlData = await wlRes.json();
         const storedUser = JSON.parse(localStorage.getItem("user"));
         const userId = storedUser?.id;
-        const filteredWL = wlData.filter(w => w.user_id === userId).map(w => w.media_id);
-        setWatchlistMedia(mediaData.filter(m => filteredWL.includes(m.id)));
 
-        const awardRes = await fetch("http://localhost:5000/media_award");
-        const awardData = await awardRes.json();
-        const awardMediaIds = [...new Set(awardData.map(a => a.media_id))];
-        setAwardWinners(mediaData.filter(m => awardMediaIds.includes(m.id)));
+        const res = await fetch(`http://localhost:5000/api/home/${userId}`);
+        const data = await res.json();
 
-        const reviewRes = await fetch("http://localhost:5000/review");
-        const reviewData = await reviewRes.json();
-
-        const reviewCount = {};
-        reviewData.forEach(r => {
-          if (!reviewCount[r.media_id]) reviewCount[r.media_id] = 0;
-          reviewCount[r.media_id]++;
-        });
-
-        setTrending(
-          [...mediaData].sort(
-            (a, b) => (reviewCount[b.id] || 0) - (reviewCount[a.id] || 0)
-          )
-        );
-
-        const prefRes = await fetch("http://localhost:5000/preference");
-        const prefData = await prefRes.json();
-        const userPrefGenres = prefData.filter(p => p.user_id === userId).map(p => p.genre_id);
-
-        const mgRes = await fetch("http://localhost:5000/media_genre");
-        const mgData = await mgRes.json();
-
-        const recommendedIds = mgData
-          .filter(mg => userPrefGenres.includes(mg.genre_id))
-          .map(mg => mg.media_id);
-
-        setRecommended(mediaData.filter(m => recommendedIds.includes(m.id)));
-
-        const fanRes = await fetch("http://localhost:5000/fan");
-        const fanData = await fanRes.json();
-        const userFanActors = fanData.filter(f => f.user_id === userId).map(f => f.person_id);
-
-        const mpRes = await fetch("http://localhost:5000/media_personality");
-        const mpData = await mpRes.json();
-
-        const starredMedia = [...new Set(
-          mpData
-            .filter(mp => userFanActors.includes(mp.person_id))
-            .map(mp => mp.media_id)
-        )];
-
-        setStarStudded(mediaData.filter(m => starredMedia.includes(m.id)));
-
+        if (data.success) {
+          setAllMedia(data.allMedia);
+          setHighlyRated(data.highlyRated);
+          setCriticallyAcclaimed(data.criticallyAcclaimed);
+          setWatchlistMedia(data.watchlistMedia);
+          setAwardWinners(data.awardWinners);
+          setTrending(data.trending);
+          setRecommended(data.recommended);
+          setStarStudded(data.starStudded);
+        }
       } catch (err) {
         console.error(err);
       }
     };
 
-    fetchEverything();
+    fetchHome();
   }, []);
 
   return (
@@ -92,8 +45,7 @@ const UserDashboard = () => {
       <UserNavbar />
 
       <div className="container mt-4">
-
-        {}
+        {/* SORT + SEARCH */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <button className="btn btn-outline-primary">Sort</button>
 
@@ -107,12 +59,12 @@ const UserDashboard = () => {
           </form>
         </div>
 
-        {}
-        <div 
+        {/* MAIN GRID */}
+        <div
           style={{
             maxHeight: "400px",
             overflowY: "auto",
-            paddingRight: "10px"
+            paddingRight: "10px",
           }}
         >
           <div
@@ -120,14 +72,18 @@ const UserDashboard = () => {
             style={{ gap: "20px" }}
           >
             {allMedia.map((item) => (
-              <MediaCard key={item.id} id={item.id} title={item.name} />
+              <MediaCard
+                id={item.id}
+                title={item.name}
+                image={item.thumbnail}
+              />
             ))}
           </div>
         </div>
 
         <hr className="my-4" />
 
-        {}
+        {/* CATEGORY ROWS */}
         <CategoryRow title="Highly Rated" list={highlyRated} />
         <CategoryRow title="Critically Acclaimed" list={criticallyAcclaimed} />
         <CategoryRow title="From Your Watchlist" list={watchlistMedia} />
@@ -135,7 +91,6 @@ const UserDashboard = () => {
         <CategoryRow title="Trending" list={trending} />
         <CategoryRow title="Recommended For You" list={recommended} />
         <CategoryRow title="Star Studded" list={starStudded} />
-
       </div>
     </>
   );

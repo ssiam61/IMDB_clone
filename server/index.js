@@ -5,6 +5,8 @@ app.use(express.json());
 
 const cors = require("cors");
 app.use(cors());
+const queryRoutes = require("./routes/queries");
+app.use("/api", queryRoutes);
 
 app.use("/users", require("./routes/users"));
 app.use("/admin", require("./routes/admin"));

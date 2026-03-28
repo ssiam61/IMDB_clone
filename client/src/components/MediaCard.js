@@ -2,7 +2,7 @@ import React from "react";
 import "./MediaCard.css";
 import { useNavigate } from "react-router-dom";
 
-const MediaCard = ({ title, id, type = "media" }) => {
+const MediaCard = ({ title, id, image, type = "media" }) => {
   const navigate = useNavigate();
 
   const goTo = () => {
@@ -11,14 +11,20 @@ const MediaCard = ({ title, id, type = "media" }) => {
   };
 
   return (
-    <div className="media-card shadow-sm" onClick={goTo} style={{ cursor: "pointer" }}>
+    <div
+      className="media-card shadow-sm"
+      onClick={goTo}
+      style={{ cursor: "pointer" }}
+    >
       <div className="media-card-image">
         <img
-          src="/images/placeholder.png"
+          src={image || "/images/placeholder.png"}
+          onError={(e) => (e.target.src = "/images/placeholder.png")}
           alt={title}
           className="img-fluid rounded"
         />
       </div>
+
       <p className="media-card-title mt-2">{title}</p>
     </div>
   );

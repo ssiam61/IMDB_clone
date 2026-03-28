@@ -5,34 +5,26 @@ import MediaCard from "../components/MediaCard";
 
 const PersonPage = () => {
   const { id } = useParams();
+
   const [person, setPerson] = useState(null);
   const [mediaList, setMediaList] = useState([]);
 
   useEffect(() => {
-    const loadPersonInfo = async () => {
+    const loadPerson = async () => {
       try {
-        const personRes = await fetch(`http://localhost:5000/person/${id}`);
-        const personData = await personRes.json();
-        setPerson(personData);
+        const res = await fetch(`http://localhost:5000/api/person/full/${id}`);
+        const data = await res.json();
 
-        const mpRes = await fetch("http://localhost:5000/media_personality");
-        const mpData = await mpRes.json();
-
-        const mediaIds = mpData
-          .filter(m => m.person_id == id)
-          .map(m => m.media_id);
-
-        const mediaRes = await fetch("http://localhost:5000/media");
-        const allMedia = await mediaRes.json();
-
-        setMediaList(allMedia.filter(m => mediaIds.includes(m.id)));
-
+        if (data.success) {
+          setPerson(data.person);
+          setMediaList(data.mediaList);
+        }
       } catch (err) {
-        console.error("Error loading person page:", err);
+        console.error("Error loading person:", err);
       }
     };
 
-    loadPersonInfo();
+    loadPerson();
   }, [id]);
 
   if (!person) return <p>Loading...</p>;
@@ -42,18 +34,20 @@ const PersonPage = () => {
       <UserNavbar />
 
       <div className="container mt-4">
+
         <div className="text-center">
-        <img
-        src={person.picture}
-        onError={(e) => (e.target.src = "/images/placeholder.png")}
-        alt={person.name}
-        style={{
-            width: "260px",
-            height: "360px",
-            borderRadius: "10px",
-            objectFit: "cover"
-        }}
-        />
+          <img
+            src={person.profile_image || "/images/placeholder.png"}
+            alt={person.name}
+            onError={(e) => (e.target.src = "/images/placeholder.png")}
+            style={{
+              width: "260px",
+              height: "360px",
+              borderRadius: "10px",
+              objectFit: "cover"
+            }}
+          />
+
           <h2 className="mt-3">{person.name}</h2>
           <h5 className="text-muted">{person.occupation}</h5>
         </div>
@@ -72,15 +66,15 @@ const PersonPage = () => {
             gap: "20px",
             paddingTop: "5px",
             paddingBottom: "10px",
-            whiteSpace: "nowrap"
+            whiteSpace: "nowrap",
           }}
         >
           {mediaList.length > 0 ? (
-            mediaList.map(media => (
+            mediaList.map((media) => (
               <MediaCard
-                key={media.id}
                 id={media.id}
                 title={media.name}
+                image={media.thumbnail}
               />
             ))
           ) : (

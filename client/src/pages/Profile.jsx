@@ -6,36 +6,27 @@ const Profile = () => {
   const [user, setUser] = useState(null);
   const [watchlist, setWatchlist] = useState([]);
   const [activeTab, setActiveTab] = useState("posts");
+
   const storedUser = JSON.parse(localStorage.getItem("user"));
   const userId = storedUser?.id;
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const loadProfile = async () => {
       try {
-        const resUser = await fetch(`http://localhost:5000/users/${userId}`);
-        const userData = await resUser.json();
-        setUser(userData);
+        const res = await fetch(`http://localhost:5000/api/profile/${userId}`);
+        const data = await res.json();
 
-
-        const wlRes = await fetch("http://localhost:5000/watchlist");
-        const wlData = await wlRes.json();
-
-        const mediaIds = wlData
-          .filter((w) => w.user_id === userId)
-          .map((w) => w.media_id);
-
-
-        const mediaRes = await fetch("http://localhost:5000/media");
-        const mediaData = await mediaRes.json();
-
-        setWatchlist(mediaData.filter((m) => mediaIds.includes(m.id)));
+        if (data.success) {
+          setUser(data.user);
+          setWatchlist(data.watchlist);
+        }
       } catch (err) {
         console.error("Error loading profile:", err);
       }
     };
 
-    fetchProfile();
-  }, []);
+    loadProfile();
+  }, [userId]);
 
   return (
     <>
@@ -43,10 +34,9 @@ const Profile = () => {
 
       <div className="container mt-4">
 
-        {}
         <div className="d-flex justify-content-center mb-3">
           <img
-            src="/images/placeholder.png"
+            src={user?.profile_picture || "/images/placeholder.png"}
             alt="profile"
             style={{
               width: "150px",
@@ -58,14 +48,13 @@ const Profile = () => {
           />
         </div>
 
-        {}
         <div className="p-4 bg-light shadow-sm rounded mb-3">
           {user ? (
             <>
               <h4>{user.name}</h4>
               <p><strong>Username:</strong> {user.username}</p>
               <p><strong>Email:</strong> {user.email}</p>
-              <p><strong>Banned:</strong> {user.is_banned ? "Yes" : "No"}</p>
+              <p><strong>Joined:</strong> {new Date(user.created_at).toDateString()}</p>
 
               <button className="btn btn-outline-primary mt-2">
                 Edit Your Info
@@ -76,7 +65,6 @@ const Profile = () => {
           )}
         </div>
 
-        {}
         <h5 className="mt-4">Your Watchlist</h5>
 
         <div
@@ -91,7 +79,13 @@ const Profile = () => {
         >
           {watchlist.length > 0 ? (
             watchlist.map((item) => (
-              <MediaCard key={item.id} id={item.id} title={item.name} />
+              <MediaCard
+                key={item.id}
+                id={item.id}
+                title={item.name}
+                image={item.thumbnail}
+              />
+
             ))
           ) : (
             <p className="text-muted">No items in watchlist</p>
@@ -100,7 +94,6 @@ const Profile = () => {
 
         <hr />
 
-        {}
         <div className="d-flex justify-content-center mb-3">
           <button
             className={
@@ -133,9 +126,7 @@ const Profile = () => {
           </button>
         </div>
 
-        {}
         <div className="p-4 bg-light shadow-sm rounded" style={{ minHeight: "200px" }}>
-          {}
           <p className="text-muted text-center mt-5">
             No content yet — coming soon.
           </p>

@@ -5,40 +5,28 @@ import EpisodeCard from "../components/EpisodeCard";
 
 const SeasonPage = () => {
   const { id } = useParams();
+
   const [season, setSeason] = useState(null);
   const [episodes, setEpisodes] = useState([]);
+  const [allSeasons, setAllSeasons] = useState([]);
+  const [thisIndex, setThisIndex] = useState(null);
+
   const [reviewText, setReviewText] = useState("");
   const [reviewStars, setReviewStars] = useState(0);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
-  const [allSeasons, setAllSeasons] = useState([]);
-  const [thisIndex, setThisIndex] = useState(null);
 
   useEffect(() => {
     const loadSeason = async () => {
       try {
-        const seasonRes = await fetch(`http://localhost:5000/season/${id}`);
-        const seasonData = await seasonRes.json();
-        setSeason(seasonData);
+        const res = await fetch(`http://localhost:5000/api/season/full/${id}`);
+        const data = await res.json();
 
-        const seriesRes = await fetch("http://localhost:5000/series");
-        const seriesData = await seriesRes.json();
-        const thisSeries = seriesData.find(s => s.id === seasonData.series_id);
-
-        if (thisSeries) {
-        const allSeasonRes = await fetch("http://localhost:5000/season");
-        const allSeasonData = await allSeasonRes.json();
-
-        const seasonsForSeries = allSeasonData.filter(s => s.series_id === thisSeries.id);
-        seasonsForSeries.sort((a, b) => a.number - b.number);
-
-        setAllSeasons(seasonsForSeries);
-        setThisIndex(seasonsForSeries.findIndex(s => s.id == id));
+        if (data.success) {
+          setSeason(data.season);
+          setEpisodes(data.episodes);
+          setAllSeasons(data.allSeasons);
+          setThisIndex(data.currentIndex);
         }
-
-        const epRes = await fetch("http://localhost:5000/episode");
-        const epData = await epRes.json();
-        setEpisodes(epData.filter(e => e.season_id == id));
-
       } catch (err) {
         console.error("Error loading season page:", err);
       }
@@ -55,46 +43,65 @@ const SeasonPage = () => {
 
       <div className="container mt-4">
         <div className="text-center">
-          <img
-            src="/images/placeholder.png"
-            alt="season"
-            style={{
-              width: "260px",
-              height: "360px",
-              objectFit: "cover",
-              borderRadius: "10px"
-            }}
-          />
+          {season.thumbnail
+            ? <img
+                src={season.thumbnail}
+                alt="season"
+                style={{
+                  width: "260px",
+                  height: "360px",
+                  objectFit: "cover",
+                  borderRadius: "10px"
+                }}
+              />
+            : <img
+                src="/images/placeholder.png"
+                alt="season"
+                style={{
+                  width: "260px",
+                  height: "360px",
+                  objectFit: "cover",
+                  borderRadius: "10px"
+                }}
+              />
+          }
+
           <h2 className="mt-3">Season {season.number}</h2>
+
           <div className="d-flex justify-content-center gap-3 mt-3">
             {thisIndex > 0 && (
-                <button
+              <button
                 className="btn btn-outline-primary"
                 onClick={() =>
-                    window.location.href = `/season/${allSeasons[thisIndex - 1].id}`
+                  (window.location.href = `/season/${allSeasons[thisIndex - 1].id}`)
                 }
-                >
+              >
                 ← Previous Season
-                </button>
+              </button>
             )}
 
             {thisIndex < allSeasons.length - 1 && (
-                <button
+              <button
                 className="btn btn-outline-primary"
                 onClick={() =>
-                    window.location.href = `/season/${allSeasons[thisIndex + 1].id}`
+                  (window.location.href = `/season/${allSeasons[thisIndex + 1].id}`)
                 }
-                >
+              >
                 Next Season →
-                </button>
+              </button>
             )}
-
-            </div>
+          </div>
         </div>
 
         <div className="p-4 bg-light shadow-sm rounded my-4">
           <p><strong>IMDB Rating:</strong> {season.imdb_rating}</p>
           <p><strong>User Rating:</strong> {season.user_rating}</p>
+          {season.description && (
+            <>
+              <p><strong>Description:</strong></p>
+              <p>{season.description}</p>
+            </>
+          )}
         </div>
 
         <h4>Episodes</h4>
@@ -109,7 +116,7 @@ const SeasonPage = () => {
             whiteSpace: "nowrap"
           }}
         >
-          {episodes.map(ep => (
+          {episodes.map((ep) => (
             <EpisodeCard key={ep.id} episode={ep} />
           ))}
         </div>
@@ -127,7 +134,7 @@ const SeasonPage = () => {
               onChange={(e) => setReviewStars(parseInt(e.target.value))}
             >
               <option value="0">Select…</option>
-              {[1,2,3,4,5,6,7,8,9,10].map(n => (
+              {[1,2,3,4,5,6,7,8,9,10].map((n) => (
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
@@ -138,7 +145,6 @@ const SeasonPage = () => {
               rows="3"
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
-              placeholder="Write something…"
             ></textarea>
 
             <button
@@ -153,6 +159,7 @@ const SeasonPage = () => {
         )}
 
         <hr />
+
         <h4>Reviews</h4>
         <p className="text-muted">No reviews yet — coming soon.</p>
       </div>

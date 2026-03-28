@@ -1,49 +1,24 @@
-CREATE DATABASE IMDBtest2;
+DROP DATABASE IF EXISTS imdbtest3;
 
-\c imdbtest2;
+CREATE DATABASE imdbtest3;
+\c imdbtest3;
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(50) NOT NULL,
+    password VARCHAR(255) NOT NULL,
     profile_picture VARCHAR(500),
-    is_banned BOOLEAN DEFAULT FALSE,
+    bio TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE admin (
     id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id) ON DELETE CASCADE UNIQUE NOT NULL,
+    user_id INT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role VARCHAR(20) NOT NULL DEFAULT 'moderator'
-        CHECK (role IN ('super_admin', 'moderator')),
-    granted_by INT REFERENCES admin(id) ON DELETE SET NULL,
-    granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE admin_log (
-    id SERIAL PRIMARY KEY,
-    admin_id INT REFERENCES admin(id) ON DELETE SET NULL,
-    action VARCHAR(100) NOT NULL, 
-    target_type VARCHAR(50),   
-    target_id INT,                      
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE user_ban (
-    id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    banned_by INT REFERENCES admin(id) ON DELETE SET NULL,
-    reason TEXT,
-    is_permanent BOOLEAN DEFAULT FALSE,
-    banned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP,  
-    lifted_at TIMESTAMP,               
-    lifted_by INT REFERENCES admin(id) ON DELETE SET NULL,
-
-    CHECK (is_permanent = TRUE OR expires_at IS NOT NULL)
+        CHECK (role = 'moderator')
 );
 
 CREATE TABLE genre (
@@ -61,7 +36,7 @@ CREATE TABLE person (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     occupation VARCHAR(50),
-    picture VARCHAR(500),
+    profile_image VARCHAR(500),
     biography TEXT
 );
 
@@ -81,24 +56,21 @@ CREATE TABLE award (
 CREATE TABLE person_award (
     person_id INT REFERENCES person(id) ON DELETE CASCADE,
     award_id INT REFERENCES award(id) ON DELETE CASCADE,
-    year INT,
+    year INT NOT NULL,
     PRIMARY KEY (person_id, award_id, year)
 );
-
 
 CREATE TABLE media (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
+    media_type VARCHAR(10) NOT NULL CHECK (media_type IN ('movie','series')),
     teaser_link VARCHAR(500),
+    thumbnail VARCHAR(500),
     description TEXT,
     imdb_rating NUMERIC(3,1),
     user_rating NUMERIC(3,1),
     duration INT,
-    added_by INT REFERENCES admin(id) ON DELETE SET NULL,
-    last_updated_by INT REFERENCES admin(id) ON DELETE SET NULL,
-    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_published BOOLEAN DEFAULT TRUE
+    release_date DATE
 );
 
 CREATE TABLE movie (
@@ -115,17 +87,28 @@ CREATE TABLE season (
     id SERIAL PRIMARY KEY,
     series_id INT REFERENCES series(id) ON DELETE CASCADE,
     number INT NOT NULL,
+    title VARCHAR(200),
+    description TEXT,
+    thumbnail VARCHAR(500),
     imdb_rating NUMERIC(3,1),
     user_rating NUMERIC(3,1),
+    release_date DATE,
+    duration INT,
     UNIQUE (series_id, number)
 );
+
 
 CREATE TABLE episode (
     id SERIAL PRIMARY KEY,
     season_id INT REFERENCES season(id) ON DELETE CASCADE,
     number INT NOT NULL,
+    title VARCHAR(200),
+    description TEXT,
+    thumbnail VARCHAR(500),
     imdb_rating NUMERIC(3,1),
     user_rating NUMERIC(3,1),
+    release_date DATE,
+    duration INT,
     UNIQUE (season_id, number)
 );
 
@@ -138,14 +121,15 @@ CREATE TABLE media_genre (
 CREATE TABLE media_personality (
     media_id INT REFERENCES media(id) ON DELETE CASCADE,
     person_id INT REFERENCES person(id) ON DELETE CASCADE,
-    role VARCHAR(20) CHECK (role IN ('actor', 'director', 'writer', 'producer')),
+    role VARCHAR(20) CHECK (role IN ('actor','director')),
     PRIMARY KEY (media_id, person_id, role)
 );
 
 CREATE TABLE media_award (
     media_id INT REFERENCES media(id) ON DELETE CASCADE,
     award_id INT REFERENCES award(id) ON DELETE CASCADE,
-    year INT,
+    year INT NOT NULL,
+    result VARCHAR(20) CHECK (result IN ('win', 'nomination')),
     PRIMARY KEY (media_id, award_id, year)
 );
 
@@ -159,11 +143,10 @@ CREATE TABLE review (
     description VARCHAR(1000),
     upvote INT DEFAULT 0,
     downvote INT DEFAULT 0,
-    is_removed BOOLEAN DEFAULT FALSE,        
+    is_removed BOOLEAN DEFAULT FALSE,
     removed_by INT REFERENCES admin(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CHECK (num_nonnulls(media_id, season_id, episode_id) <= 1)
+    CHECK (num_nonnulls(media_id, season_id, episode_id) = 1)
 );
 
 CREATE TABLE reply (
@@ -174,16 +157,14 @@ CREATE TABLE reply (
     description VARCHAR(1000),
     upvote INT DEFAULT 0,
     downvote INT DEFAULT 0,
-    is_removed BOOLEAN DEFAULT FALSE,        
+    is_removed BOOLEAN DEFAULT FALSE,
     removed_by INT REFERENCES admin(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     CHECK (
         (parent_review_id IS NOT NULL AND parent_reply_id IS NULL)
         OR (parent_review_id IS NULL AND parent_reply_id IS NOT NULL)
     )
 );
-
 
 CREATE TABLE report (
     id SERIAL PRIMARY KEY,
@@ -196,13 +177,13 @@ CREATE TABLE report (
     actioned_by INT REFERENCES admin(id) ON DELETE SET NULL,
     actioned_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     CHECK (num_nonnulls(review_id, reply_id) = 1)
 );
 
 CREATE TABLE watchlist (
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
     media_id INT REFERENCES media(id) ON DELETE CASCADE,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, media_id)
 );
 
@@ -217,3 +198,8 @@ CREATE TABLE reply_attachments (
     attachment VARCHAR(500) NOT NULL,
     PRIMARY KEY (reply_id, attachment)
 );
+
+CREATE INDEX idx_media_user_rating ON media(user_rating);
+CREATE INDEX idx_media_imdb_rating ON media(imdb_rating);
+CREATE INDEX idx_review_media ON review(media_id);
+CREATE INDEX idx_review_user ON review(user_id);
