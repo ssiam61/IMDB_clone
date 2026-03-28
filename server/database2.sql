@@ -198,8 +198,3 @@ CREATE TABLE reply_attachments (
     attachment VARCHAR(500) NOT NULL,
     PRIMARY KEY (reply_id, attachment)
 );
-
-CREATE INDEX idx_media_user_rating ON media(user_rating);
-CREATE INDEX idx_media_imdb_rating ON media(imdb_rating);
-CREATE INDEX idx_review_media ON review(media_id);
-CREATE INDEX idx_review_user ON review(user_id);
