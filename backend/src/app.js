@@ -5,6 +5,8 @@ import mediaRoutes from "./routes/mediaRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import watchlistRoutes from "./routes/watchlistRoutes.js";
+import searchRoutes from "./routes/searchRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 
 
 // import {authMiddleware} from "./middleware/authMiddleware.js";
@@ -25,6 +27,8 @@ app.use("/api/media", mediaRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/watchlist", watchlistRoutes);
+app.use("/api/search", searchRoutes);
+app.use("/api/users", userRoutes);
 
 // middleware testing.
 // app.get("/api/protected", authMiddleware, (req, res) => {
