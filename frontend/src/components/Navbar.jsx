@@ -66,9 +66,14 @@ export default function Navbar() {
             </Link>
 
             {isLoggedIn && (
-              <Link to="/profile" className="nav-link">
-                Profile
-              </Link>
+              <>
+                <Link to="/profile" className="nav-link">
+                  Profile
+                </Link>
+                <Link to="/watchlist" className="nav-link">
+                  Watchlist
+                </Link>
+              </>
             )}
           </div>
 
@@ -138,13 +143,22 @@ export default function Navbar() {
             </Link>
 
             {isLoggedIn && (
-              <Link
-                to="/profile"
-                className="block px-4 py-2 rounded-lg text-white hover:bg-white/10 transition-all duration-300 font-medium"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Profile
-              </Link>
+              <>
+                <Link
+                  to="/profile"
+                  className="block px-4 py-2 rounded-lg text-white hover:bg-white/10 transition-all duration-300 font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Profile
+                </Link>
+                <Link
+                  to="/watchlist"
+                  className="block px-4 py-2 rounded-lg text-white hover:bg-white/10 transition-all duration-300 font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Watchlist
+                </Link>
+              </>
             )}
 
             <div className="pt-2 space-y-2">

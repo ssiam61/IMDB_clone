@@ -4,6 +4,8 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
+import MediaDetailsPage from './pages/MediaDetailsPage';
+import WatchlistPage from './pages/WatchlistPage';
 import './App.css';
 
 function App() {
@@ -16,6 +18,8 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/media/:id" element={<MediaDetailsPage />} />
+          <Route path="/watchlist" element={<WatchlistPage />} />
         </Routes>
       </div>
     </Router>

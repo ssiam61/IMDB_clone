@@ -24,6 +24,14 @@ export default function HomePage() {
     }
   };
 
+  // Format duration helper (e.g., 142 minutes -> "2h 28m")
+  const formatDuration = (minutes) => {
+    if (!minutes) return 'N/A';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center">
@@ -114,52 +122,106 @@ export default function HomePage() {
               {movies.map((movie, index) => (
                 <div
                   key={movie.id}
-                  className="group glass-card overflow-hidden hover-glow hover-lift animate-in fade-in"
+                  className="group h-full cursor-pointer animate-in fade-in"
                   style={{ animationDelay: `${index * 50}ms` }}
+                  onClick={() => navigate(`/media/${movie.id}`)}
                 >
-                  {/* Movie Poster */}
-                  {movie.posterUrl && (
-                    <div className="relative h-64 bg-gradient-to-br from-[#16213E] to-[#0F3460] overflow-hidden">
-                      <img
-                        src={movie.posterUrl}
-                        alt={movie.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 filter group-hover:brightness-110"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    </div>
-                  )}
+                  {/* Card Container */}
+                  <div className="relative h-full rounded-xl overflow-hidden backdrop-blur-sm border border-white/10 transition-all duration-300 hover:border-white/20 hover:shadow-[0_0_30px_rgba(233,69,96,0.3)] hover:scale-105 bg-gradient-to-br from-[#16213E] to-[#0F3460]">
+                    
+                    {/* Image/Background Section */}
+                    <div className="relative h-48 bg-gradient-to-br from-[#16213E] to-[#0F3460] overflow-hidden">
+                      {/* Placeholder or image background */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#E94560]/20 to-[#533483]/20"></div>
+                      
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0F3460] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                  {/* Info Section */}
-                  <div className="p-5">
-                    <h3 className="text-white font-bold text-lg mb-3 line-clamp-2 group-hover:text-[#E94560] transition-colors">
-                      {movie.title}
-                    </h3>
-
-                    {/* Rating & Year */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#F5C518] font-bold text-lg">
-                          ⭐ {movie.imdbRating ? movie.imdbRating.toFixed(1) : 'N/A'}
-                        </span>
+                      {/* Video icon or play button on hover */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <svg className="w-16 h-16 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm6.39-2.908a.75.75 0 01.766.027l5.5 3.5A.75.75 0 0114 10.5v-1a.75.75 0 00-1.126-.659l-3.874 2.409v-2.5a.75.75 0 00-1.126-.659l-2.5 1.5a.75.75 0 00.252 1.325z" />
+                        </svg>
                       </div>
-                      <span className="text-[#A8A8B3] text-sm px-3 py-1 bg-white/5 rounded-full">
-                        {movie.releaseYear}
-                      </span>
                     </div>
 
-                    {/* Description */}
-                    <p className="text-[#A8A8B3] text-sm line-clamp-3 mb-4">
-                      {movie.description}
-                    </p>
+                    {/* Content Section */}
+                    <div className="p-5 flex flex-col h-full">
+                      
+                      {/* Title & Rating */}
+                      <div className="mb-4">
+                        <h3 className="text-white font-bold text-lg line-clamp-2 group-hover:text-[#E94560] transition-colors mb-2">
+                          {movie.name}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#F5C518] font-bold text-lg">⭐</span>
+                          <span className="text-white font-semibold">{movie.imdbRating ? movie.imdbRating.toFixed(1) : 'N/A'}</span>
+                          {movie.userRating && (
+                            <span className="text-[#A8A8B3] text-sm">({movie.userRating.toFixed(1)})</span>
+                          )}
+                        </div>
+                      </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-3">
-                      <button className="flex-1 bg-gradient-to-r from-[#E94560] to-[#533483] text-white py-2 rounded-lg hover:shadow-[0_0_20px_rgba(233,69,96,0.3)] transition-all duration-300 font-semibold text-sm">
-                        View Details
-                      </button>
-                      <button className="flex-1 bg-white/10 border border-white/20 text-white py-2 rounded-lg hover:bg-white/20 transition-all duration-300 font-semibold text-sm">
-                        + Add List
-                      </button>
+                      {/* Genres as pills */}
+                      {movie.genres && movie.genres.length > 0 && (
+                        <div className="mb-4 flex flex-wrap gap-1">
+                          {movie.genres.slice(0, 3).map((genre, idx) => (
+                            <span key={idx} className="inline-block text-xs px-2.5 py-1 bg-[#E94560]/20 text-[#E94560] rounded-full border border-[#E94560]/30">
+                              {genre}
+                            </span>
+                          ))}
+                          {movie.genres.length > 3 && (
+                            <span className="inline-block text-xs px-2.5 py-1 bg-white/5 text-[#A8A8B3] rounded-full border border-white/10">
+                              +{movie.genres.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Duration & Director */}
+                      <div className="mb-4 space-y-1 text-xs text-[#A8A8B3]">
+                        {movie.duration && (
+                          <div>⏱ {formatDuration(movie.duration)}</div>
+                        )}
+                        {movie.director && (
+                          <div className="line-clamp-1">Directed by: <span className="text-white font-medium">{movie.director}</span></div>
+                        )}
+                        {movie.type && (
+                          <div className="text-[#F5C518] font-medium uppercase text-xs tracking-wide">
+                            {movie.type}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Cast Members */}
+                      {movie.cast && movie.cast.length > 0 && (
+                        <div className="mb-4 text-xs text-[#A8A8B3]">
+                          <div className="font-semibold text-white mb-1">Cast:</div>
+                          <div className="space-y-0.5">
+                            {movie.cast.slice(0, 2).map((actor, idx) => (
+                              <div key={idx} className="text-white line-clamp-1">
+                                • {actor}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Hover: Description section */}
+                      <div className="mt-auto pt-4 border-t border-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <p className="text-[#A8A8B3] text-xs line-clamp-3 mb-4">
+                          {movie.description || 'No description available'}
+                        </p>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/media/${movie.id}`);
+                          }}
+                          className="w-full bg-gradient-to-r from-[#E94560] to-[#533483] text-white py-2 rounded-lg hover:shadow-[0_0_20px_rgba(233,69,96,0.3)] transition-all duration-300 font-semibold text-sm"
+                        >
+                          View Details
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
