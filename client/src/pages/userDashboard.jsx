@@ -13,6 +13,7 @@ const UserDashboard = () => {
   const [trending, setTrending] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [starStudded, setStarStudded] = useState([]);
+  const [directedByFavorites, setDirectedByFavorites] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -37,6 +38,7 @@ const UserDashboard = () => {
           setTrending(data.trending);
           setRecommended(data.recommended);
           setStarStudded(data.starStudded);
+          setDirectedByFavorites(data.directedByFavorites);
         }
       } catch (err) {
         console.error(err);
@@ -282,7 +284,13 @@ const UserDashboard = () => {
 
           {starStudded.length > 0 && (
             <div style={{ marginBottom: "60px" }}>
-              <CategoryRow title="⭐ Star Studded" list={starStudded} />
+              <CategoryRow title="🎬 Starred by Favorite Actors" list={starStudded} />
+            </div>
+          )}
+
+          {directedByFavorites.length > 0 && (
+            <div style={{ marginBottom: "60px" }}>
+              <CategoryRow title="🎥 Directed by Favorite Directors" list={directedByFavorites} />
             </div>
           )}
 

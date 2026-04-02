@@ -4,6 +4,7 @@ import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
 import AwardCard from "../components/AwardCard";
 import SeasonCard from "../components/SeasonCard";
+import { authenticatedFetch, getUser } from "../utils/auth";
 
 const MediaPage = () => {
   const { id } = useParams();
@@ -13,10 +14,14 @@ const MediaPage = () => {
   const [cast, setCast] = useState([]);
   const [awards, setAwards] = useState([]);
   const [seasons, setSeasons] = useState([]);
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
 
   const [reviewText, setReviewText] = useState("");
   const [reviewStars, setReviewStars] = useState(0);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  const userId = getUser()?.id;
 
   const pageStyles = {
     container: {
@@ -185,6 +190,59 @@ const MediaPage = () => {
     loadMedia();
   }, [id]);
 
+  useEffect(() => {
+    if (userId && id) {
+      const checkWatchlist = async () => {
+        try {
+          const res = await authenticatedFetch(`http://localhost:5000/api/watchlist/check/${userId}/${id}`);
+          const data = await res.json();
+          setInWatchlist(data.inWatchlist);
+        } catch (err) {
+          console.error("Error checking watchlist:", err);
+        }
+      };
+      checkWatchlist();
+    }
+  }, [userId, id]);
+
+  const handleAddToWatchlist = async () => {
+    if (!userId) return;
+    setWatchlistLoading(true);
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/watchlist/add/${userId}/${id}`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setInWatchlist(true);
+      }
+    } catch (err) {
+      console.error("Error adding to watchlist:", err);
+    } finally {
+      setWatchlistLoading(false);
+    }
+  };
+
+  const handleRemoveFromWatchlist = async () => {
+    if (!userId) return;
+    setWatchlistLoading(true);
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/watchlist/remove/${userId}/${id}`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setInWatchlist(false);
+      }
+    } catch (err) {
+      console.error("Error removing from watchlist:", err);
+    } finally {
+      setWatchlistLoading(false);
+    }
+  };
+
   if (!media) return (
     <>
       <UserNavbar />
@@ -209,6 +267,40 @@ const MediaPage = () => {
               style={pageStyles.poster}
             />
             <h2 style={pageStyles.title}>{media.name}</h2>
+            
+            <button
+              onClick={inWatchlist ? handleRemoveFromWatchlist : handleAddToWatchlist}
+              disabled={watchlistLoading}
+              style={{
+                marginTop: "20px",
+                padding: "12px 32px",
+                background: inWatchlist 
+                  ? "rgba(255, 90, 126, 0.2)" 
+                  : "linear-gradient(135deg, #ff5a7e, #a855f7)",
+                border: inWatchlist 
+                  ? "1px solid rgba(255, 90, 126, 0.5)" 
+                  : "none",
+                color: "#ffffff",
+                borderRadius: "8px",
+                fontWeight: "700",
+                fontSize: "14px",
+                cursor: watchlistLoading ? "not-allowed" : "pointer",
+                transition: "all 0.3s ease",
+                opacity: watchlistLoading ? 0.7 : 1,
+              }}
+              onMouseEnter={(e) => {
+                if (!watchlistLoading && !inWatchlist) {
+                  e.target.style.boxShadow = "0 6px 20px rgba(255, 90, 126, 0.4)";
+                  e.target.style.transform = "translateY(-2px)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.boxShadow = "none";
+                e.target.style.transform = "translateY(0)";
+              }}
+            >
+              {inWatchlist ? "✓ In Watchlist" : "+ Add to Watchlist"}
+            </button>
           </div>
 
           {media.teaser_link && extractYoutubeId(media.teaser_link) ? (

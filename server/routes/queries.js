@@ -140,7 +140,18 @@ router.get("/home/:userId", async (req, res) => {
          FROM fan
          JOIN media_personality ON media_personality.person_id = fan.person_id
          JOIN media ON media.id = media_personality.media_id
-         WHERE fan.user_id = $1`,
+         WHERE fan.user_id = $1 AND media_personality.role = 'actor'`,
+        [userId]
+      )
+    ).rows;
+
+    const directedByFavorites = (
+      await pool.query(
+        `SELECT DISTINCT media.*
+         FROM fan
+         JOIN media_personality ON media_personality.person_id = fan.person_id
+         JOIN media ON media.id = media_personality.media_id
+         WHERE fan.user_id = $1 AND media_personality.role = 'director'`,
         [userId]
       )
     ).rows;
@@ -154,7 +165,8 @@ router.get("/home/:userId", async (req, res) => {
       awardWinners,
       trending,
       recommended,
-      starStudded
+      starStudded,
+      directedByFavorites
     });
 
   } catch (err) {
@@ -405,24 +417,154 @@ router.get("/fan/user/:userId", async (req, res) => {
   const userId = req.params.userId;
 
   try {
-    const result = await pool.query(
-      `
-      SELECT 
-        person.id,
-        person.name,
-        person.profile_image,
-        person.occupation
-      FROM fan
-      JOIN person ON person.id = fan.person_id
-      WHERE fan.user_id = $1
-      `,
+    const actorsResult = await pool.query(
+      `SELECT person.id, person.name, person.profile_image, person.occupation
+       FROM fan
+       JOIN person ON person.id = fan.person_id
+       JOIN media_personality ON media_personality.person_id = person.id
+       WHERE fan.user_id = $1 AND media_personality.role = 'actor'
+       GROUP BY person.id, person.name, person.profile_image, person.occupation`,
       [userId]
     );
 
-    res.json(result.rows);
+    const directorsResult = await pool.query(
+      `SELECT person.id, person.name, person.profile_image, person.occupation
+       FROM fan
+       JOIN person ON person.id = fan.person_id
+       JOIN media_personality ON media_personality.person_id = person.id
+       WHERE fan.user_id = $1 AND media_personality.role = 'director'
+       GROUP BY person.id, person.name, person.profile_image, person.occupation`,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      actors: actorsResult.rows,
+      directors: directorsResult.rows
+    });
   } catch (err) {
-    console.error("Error fetching favorite actors:", err);
+    console.error("Error fetching favorite people:", err);
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Add to watchlist
+router.post("/watchlist/add/:userId/:mediaId", async (req, res) => {
+  const { userId, mediaId } = req.params;
+
+  try {
+    const checkResult = await pool.query(
+      "SELECT * FROM watchlist WHERE user_id = $1 AND media_id = $2",
+      [userId, mediaId]
+    );
+
+    if (checkResult.rows.length > 0) {
+      return res.json({ success: false, message: "Already in watchlist" });
+    }
+
+    await pool.query(
+      "INSERT INTO watchlist (user_id, media_id) VALUES ($1, $2)",
+      [userId, mediaId]
+    );
+
+    res.json({ success: true, message: "Added to watchlist" });
+  } catch (err) {
+    console.error("Error adding to watchlist:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Remove from watchlist
+router.post("/watchlist/remove/:userId/:mediaId", async (req, res) => {
+  const { userId, mediaId } = req.params;
+
+  try {
+    await pool.query(
+      "DELETE FROM watchlist WHERE user_id = $1 AND media_id = $2",
+      [userId, mediaId]
+    );
+
+    res.json({ success: true, message: "Removed from watchlist" });
+  } catch (err) {
+    console.error("Error removing from watchlist:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Check if in watchlist
+router.get("/watchlist/check/:userId/:mediaId", async (req, res) => {
+  const { userId, mediaId } = req.params;
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM watchlist WHERE user_id = $1 AND media_id = $2",
+      [userId, mediaId]
+    );
+
+    res.json({ inWatchlist: result.rows.length > 0 });
+  } catch (err) {
+    console.error("Error checking watchlist:", err);
+    res.json({ inWatchlist: false });
+  }
+});
+
+// Become a fan
+router.post("/fan/add/:userId/:personId", async (req, res) => {
+  const { userId, personId } = req.params;
+
+  try {
+    const checkResult = await pool.query(
+      "SELECT * FROM fan WHERE user_id = $1 AND person_id = $2",
+      [userId, personId]
+    );
+
+    if (checkResult.rows.length > 0) {
+      return res.json({ success: false, message: "Already a fan" });
+    }
+
+    await pool.query(
+      "INSERT INTO fan (user_id, person_id) VALUES ($1, $2)",
+      [userId, personId]
+    );
+
+    res.json({ success: true, message: "Became a fan" });
+  } catch (err) {
+    console.error("Error becoming a fan:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Remove from fans
+router.post("/fan/remove/:userId/:personId", async (req, res) => {
+  const { userId, personId } = req.params;
+
+  try {
+    await pool.query(
+      "DELETE FROM fan WHERE user_id = $1 AND person_id = $2",
+      [userId, personId]
+    );
+
+    res.json({ success: true, message: "Removed from fans" });
+  } catch (err) {
+    console.error("Error removing fan:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Check if fan
+router.get("/fan/check/:userId/:personId", async (req, res) => {
+  const { userId, personId } = req.params;
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM fan WHERE user_id = $1 AND person_id = $2",
+      [userId, personId]
+    );
+
+    res.json({ isFan: result.rows.length > 0 });
+  } catch (err) {
+    console.error("Error checking fan status:", err);
+    res.json({ isFan: false });
   }
 });
 

@@ -8,6 +8,7 @@ const Profile = () => {
   const [user, setUser] = useState(null);
   const [watchlist, setWatchlist] = useState([]);
   const [favoriteActors, setFavoriteActors] = useState([]);
+  const [favoriteDirectors, setFavoriteDirectors] = useState([]);
   const [activeTab, setActiveTab] = useState("posts");
   const [modalOpen, setModalOpen] = useState(false);
   const [editData, setEditData] = useState({
@@ -38,9 +39,12 @@ const Profile = () => {
           setWatchlist(data.watchlist);
         }
 
-        const actorsRes = await authenticatedFetch(`http://localhost:5000/api/fan/user/${userId}`);
-        const actorsData = await actorsRes.json();
-        setFavoriteActors(actorsData);
+        const peopleRes = await authenticatedFetch(`http://localhost:5000/api/fan/user/${userId}`);
+        const peopleData = await peopleRes.json();
+        if (peopleData.success) {
+          setFavoriteActors(peopleData.actors);
+          setFavoriteDirectors(peopleData.directors);
+        }
       } catch (err) {
         console.error("Error loading profile:", err);
       }
@@ -325,7 +329,13 @@ const Profile = () => {
 
           {favoriteActors.length > 0 && (
             <div style={{ marginBottom: "60px" }}>
-              <CategoryRow title="⭐ Your Favorite Actors" list={favoriteActors} type="person" />
+              <CategoryRow title="🎬 Your Favorite Actors" list={favoriteActors} type="person" />
+            </div>
+          )}
+
+          {favoriteDirectors.length > 0 && (
+            <div style={{ marginBottom: "60px" }}>
+              <CategoryRow title="🎥 Your Favorite Directors" list={favoriteDirectors} type="person" />
             </div>
           )}
 
