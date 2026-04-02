@@ -5,9 +5,9 @@ import api from '../services/api';
 export default function SignupPage() {
   const [formData, setFormData] = useState({
     username: '',
+    name: '',
     email: '',
     password: '',
-    confirmPassword: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,26 +24,80 @@ export default function SignupPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
+    // Validate all fields are filled
+    if (!formData.username.trim()) {
+      setError('Please enter a username');
+      return;
+    }
+    if (!formData.name.trim()) {
+      setError('Please enter your name');
+      return;
+    }
+    if (!formData.email.trim()) {
+      setError('Please enter an email address');
+      return;
+    }
+    if (!formData.password.trim()) {
+      setError('Please enter a password');
       return;
     }
 
+    setLoading(true);
+
     try {
+      // Debug log
+      console.log('Form data:', formData);
+
       const response = await api.post('/auth/signup', {
         username: formData.username,
+        name: formData.name,
         email: formData.email,
         password: formData.password,
       });
 
+      // Store token
       localStorage.setItem('authToken', response.data.token);
-      localStorage.setItem('userId', response.data.userId);
+
+      // Store user object with id, username, and role
+      if (response.data.user) {
+        localStorage.setItem(
+          'user',
+          JSON.stringify({
+            id: response.data.user.id,
+            username: response.data.user.username,
+            role: response.data.user.role || 'user',
+          })
+        );
+      } else {
+        localStorage.setItem(
+          'user',
+          JSON.stringify({
+            id: response.data.id || response.data.userId,
+            username: response.data.username || formData.username,
+            role: response.data.role || 'user',
+          })
+        );
+      }
+
+      // Clear form
+      setFormData({
+        username: '',
+        name: '',
+        email: '',
+        password: '',
+      });
+
+      // Redirect to home
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Signup failed. Please try again.');
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.status === 409
+          ? 'Username or email already exists'
+          : 'Signup failed. Please try again.';
+      setError(errorMessage);
+      console.error('Signup error:', err);
     } finally {
       setLoading(false);
     }
@@ -73,8 +127,19 @@ export default function SignupPage() {
 
           {/* Error Alert */}
           {error && (
-            <div className="mb-6 p-4 bg-red-500/15 border border-red-500/30 rounded-lg text-red-400 text-sm backdrop-blur-sm animate-in fade-in">
-              {error}
+            <div className="mb-6 p-4 bg-red-500/15 border border-red-500/30 rounded-lg text-red-400 text-sm backdrop-blur-sm animate-in fade-in flex items-start gap-3">
+              <svg
+                className="w-5 h-5 flex-shrink-0 mt-0.5"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
 
@@ -90,9 +155,25 @@ export default function SignupPage() {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-[rgba(22,33,62,0.5)] border border-white/10 rounded-lg text-white placeholder-[#A8A8B3] focus:outline-none focus:border-[#E94560] focus:bg-[rgba(22,33,62,0.8)] focus:ring-2 focus:ring-[#E94560]/30 transition-all duration-300 backdrop-blur-sm"
+                disabled={loading}
+                className="w-full px-4 py-3 bg-[rgba(22,33,62,0.5)] border border-white/10 rounded-lg text-white placeholder-[#A8A8B3] focus:outline-none focus:border-[#E94560] focus:bg-[rgba(22,33,62,0.8)] focus:ring-2 focus:ring-[#E94560]/30 transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Choose your username"
-                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="name" className="block text-[#EAEAEA] font-medium mb-2 text-sm">
+                Full Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                disabled={loading}
+                className="w-full px-4 py-3 bg-[rgba(22,33,62,0.5)] border border-white/10 rounded-lg text-white placeholder-[#A8A8B3] focus:outline-none focus:border-[#E94560] focus:bg-[rgba(22,33,62,0.8)] focus:ring-2 focus:ring-[#E94560]/30 transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                placeholder="Enter your full name"
               />
             </div>
 
@@ -106,9 +187,9 @@ export default function SignupPage() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-[rgba(22,33,62,0.5)] border border-white/10 rounded-lg text-white placeholder-[#A8A8B3] focus:outline-none focus:border-[#E94560] focus:bg-[rgba(22,33,62,0.8)] focus:ring-2 focus:ring-[#E94560]/30 transition-all duration-300 backdrop-blur-sm"
+                disabled={loading}
+                className="w-full px-4 py-3 bg-[rgba(22,33,62,0.5)] border border-white/10 rounded-lg text-white placeholder-[#A8A8B3] focus:outline-none focus:border-[#E94560] focus:bg-[rgba(22,33,62,0.8)] focus:ring-2 focus:ring-[#E94560]/30 transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="your@email.com"
-                required
               />
             </div>
 
@@ -122,38 +203,22 @@ export default function SignupPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-[rgba(22,33,62,0.5)] border border-white/10 rounded-lg text-white placeholder-[#A8A8B3] focus:outline-none focus:border-[#E94560] focus:bg-[rgba(22,33,62,0.8)] focus:ring-2 focus:ring-[#E94560]/30 transition-all duration-300 backdrop-blur-sm"
+                disabled={loading}
+                className="w-full px-4 py-3 bg-[rgba(22,33,62,0.5)] border border-white/10 rounded-lg text-white placeholder-[#A8A8B3] focus:outline-none focus:border-[#E94560] focus:bg-[rgba(22,33,62,0.8)] focus:ring-2 focus:ring-[#E94560]/30 transition-all duration-300 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="••••••••"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-[#EAEAEA] font-medium mb-2 text-sm">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-[rgba(22,33,62,0.5)] border border-white/10 rounded-lg text-white placeholder-[#A8A8B3] focus:outline-none focus:border-[#E94560] focus:bg-[rgba(22,33,62,0.8)] focus:ring-2 focus:ring-[#E94560]/30 transition-all duration-300 backdrop-blur-sm"
-                placeholder="••••••••"
-                required
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-[#E94560] to-[#533483] text-white font-bold py-3 px-4 rounded-full hover:shadow-[0_0_30px_rgba(233,69,96,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transform hover:-translate-y-0.5 transition-all duration-300 mt-6"
+              className="w-full bg-gradient-to-r from-[#E94560] to-[#533483] text-white font-bold py-3 px-4 rounded-full hover:shadow-[0_0_30px_rgba(233,69,96,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:shadow-none transform hover:-translate-y-0.5 transition-all duration-300 mt-6 flex items-center justify-center gap-2"
             >
               {loading ? (
-                <span className="flex items-center justify-center gap-2">
+                <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  Creating account...
-                </span>
+                  <span>Creating account...</span>
+                </>
               ) : (
                 'Create Account'
               )}
