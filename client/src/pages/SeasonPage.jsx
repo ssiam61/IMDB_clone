@@ -16,7 +16,7 @@ const SeasonPage = () => {
   const [reviewStars, setReviewStars] = useState(0);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  const inAdminMode = getInAdminMode();
+  const [inAdminMode, setInAdminMode] = useState(getInAdminMode());
 
   // Modal states for adding episode
   const [showAddEpisodeModal, setShowAddEpisodeModal] = useState(false);
@@ -27,6 +27,15 @@ const SeasonPage = () => {
     duration: "",
   });
   const [addingEpisode, setAddingEpisode] = useState(false);
+
+  // Edit season modal states
+  const [showEditSeasonModal, setShowEditSeasonModal] = useState(false);
+  const [editSeasonForm, setEditSeasonForm] = useState({
+    number: "",
+    title: "",
+    release_date: "",
+  });
+  const [editingSeason, setEditingSeason] = useState(false);
 
   const pageStyles = {
     container: {
@@ -169,6 +178,18 @@ const SeasonPage = () => {
     loadSeason();
   }, [id]);
 
+  useEffect(() => {
+    // Listen for admin mode changes
+    const handleAdminModeChange = (event) => {
+      setInAdminMode(event.detail.inAdminMode);
+    };
+
+    window.addEventListener("adminModeChanged", handleAdminModeChange);
+    return () => {
+      window.removeEventListener("adminModeChanged", handleAdminModeChange);
+    };
+  }, []);
+
   const handleAddEpisode = async () => {
     if (!addEpisodeForm.number) {
       alert("Episode number is required");
@@ -204,6 +225,51 @@ const SeasonPage = () => {
     }
   };
 
+  const handleOpenEditSeason = () => {
+    if (season) {
+      setEditSeasonForm({
+        number: season.number || "",
+        title: season.title || "",
+        release_date: season.release_date || "",
+      });
+      setShowEditSeasonModal(true);
+    }
+  };
+
+  const handleEditSeason = async () => {
+    if (!editSeasonForm.number || !editSeasonForm.release_date) {
+      alert("Season number and release date are required");
+      return;
+    }
+    setEditingSeason(true);
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/admin/season/edit/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            number: parseInt(editSeasonForm.number),
+            title: editSeasonForm.title || null,
+            release_date: editSeasonForm.release_date,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setSeason(data.season);
+        setEditSeasonForm({ number: "", title: "", release_date: "" });
+        setShowEditSeasonModal(false);
+        alert("Season updated successfully!");
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setEditingSeason(false);
+    }
+  };
+
   if (!season) return (
     <>
       <UserNavbar />
@@ -227,7 +293,35 @@ const SeasonPage = () => {
               alt="season"
               style={pageStyles.poster}
             />
-            <h2 style={pageStyles.title}>Season {season.number}</h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+              <h2 style={pageStyles.title}>Season {season.number}</h2>
+              {inAdminMode && (
+                <button
+                  onClick={handleOpenEditSeason}
+                  style={{
+                    padding: "12px 24px",
+                    background: "linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(168, 85, 247, 0.1))",
+                    border: "1px solid rgba(168, 85, 247, 0.5)",
+                    color: "#a855f7",
+                    borderRadius: "8px",
+                    fontWeight: "700",
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.background = "linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(168, 85, 247, 0.2))";
+                    e.target.style.boxShadow = "0 6px 20px rgba(168, 85, 247, 0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.background = "linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(168, 85, 247, 0.1))";
+                    e.target.style.boxShadow = "none";
+                  }}
+                >
+                  ✏️ Edit Season
+                </button>
+              )}
+            </div>
 
             <div style={pageStyles.navigationButtons}>
               {thisIndex > 0 && (
@@ -551,6 +645,130 @@ const SeasonPage = () => {
                   </button>
                   <button
                     onClick={() => setShowAddEpisodeModal(false)}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "rgba(168, 85, 247, 0.2)",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showEditSeasonModal && (
+            <div
+              style={{
+                position: "fixed",
+                top: "0",
+                left: "0",
+                right: "0",
+                bottom: "0",
+                background: "rgba(0, 0, 0, 0.7)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 2000,
+              }}
+              onClick={() => setShowEditSeasonModal(false)}
+            >
+              <div
+                style={{
+                  background: "linear-gradient(135deg, rgba(10, 14, 39, 0.95) 0%, rgba(26, 31, 58, 0.95) 100%)",
+                  border: "1px solid rgba(168, 85, 247, 0.3)",
+                  borderRadius: "12px",
+                  padding: "32px",
+                  maxWidth: "500px",
+                  width: "90%",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 style={{ color: "#a855f7", marginBottom: "24px", fontSize: "1.5rem", fontWeight: "700" }}>Edit Season</h3>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>Season Number *</label>
+                  <input
+                    type="number"
+                    value={editSeasonForm.number}
+                    onChange={(e) => setEditSeasonForm({ ...editSeasonForm, number: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "rgba(255, 90, 126, 0.1)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>Season Title</label>
+                  <input
+                    type="text"
+                    value={editSeasonForm.title}
+                    onChange={(e) => setEditSeasonForm({ ...editSeasonForm, title: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "rgba(255, 90, 126, 0.1)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>Release Date *</label>
+                  <input
+                    type="date"
+                    value={editSeasonForm.release_date}
+                    onChange={(e) => setEditSeasonForm({ ...editSeasonForm, release_date: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "rgba(255, 90, 126, 0.1)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    onClick={handleEditSeason}
+                    disabled={editingSeason}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "linear-gradient(135deg, #ff5a7e, #a855f7)",
+                      border: "none",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: editingSeason ? "not-allowed" : "pointer",
+                      opacity: editingSeason ? 0.7 : 1,
+                    }}
+                  >
+                    {editingSeason ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button
+                    onClick={() => setShowEditSeasonModal(false)}
                     style={{
                       flex: 1,
                       padding: "12px",

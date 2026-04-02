@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
-import { authenticatedFetch, getUser } from "../utils/auth";
+import { authenticatedFetch, getUser, getInAdminMode } from "../utils/auth";
 
 const PersonPage = () => {
   const { id } = useParams();
@@ -12,6 +12,17 @@ const PersonPage = () => {
   const [mediaList, setMediaList] = useState([]);
   const [isFan, setIsFan] = useState(false);
   const [fanLoading, setFanLoading] = useState(false);
+
+  const [inAdminMode, setInAdminMode] = useState(getInAdminMode());
+
+  // Edit person modal states
+  const [showEditPersonModal, setShowEditPersonModal] = useState(false);
+  const [editPersonForm, setEditPersonForm] = useState({
+    name: "",
+    biography: "",
+    profile_image: "",
+  });
+  const [editingPerson, setEditingPerson] = useState(false);
 
   const pageStyles = {
     container: {
@@ -143,6 +154,18 @@ const PersonPage = () => {
     checkFanStatus();
   }, [userId, id]);
 
+  useEffect(() => {
+    // Listen for admin mode changes
+    const handleAdminModeChange = (event) => {
+      setInAdminMode(event.detail.inAdminMode);
+    };
+
+    window.addEventListener("adminModeChanged", handleAdminModeChange);
+    return () => {
+      window.removeEventListener("adminModeChanged", handleAdminModeChange);
+    };
+  }, []);
+
   const handleBecomeFan = async () => {
     if (!userId) return;
     setFanLoading(true);
@@ -178,6 +201,51 @@ const PersonPage = () => {
       console.error("Error removing fan status:", err);
     } finally {
       setFanLoading(false);
+    }
+  };
+
+  const handleOpenEditPerson = () => {
+    if (person) {
+      setEditPersonForm({
+        name: person.name || "",
+        biography: person.biography || "",
+        profile_image: person.profile_image || "",
+      });
+      setShowEditPersonModal(true);
+    }
+  };
+
+  const handleEditPerson = async () => {
+    if (!editPersonForm.name) {
+      alert("Person name is required");
+      return;
+    }
+    setEditingPerson(true);
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/admin/person/edit/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            name: editPersonForm.name,
+            biography: editPersonForm.biography,
+            profile_image: editPersonForm.profile_image,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setPerson(data.person);
+        setEditPersonForm({ name: "", biography: "", profile_image: "" });
+        setShowEditPersonModal(false);
+        alert("Person updated successfully!");
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setEditingPerson(false);
     }
   };
 
@@ -241,6 +309,37 @@ const PersonPage = () => {
             >
               {isFan ? "⭐ You're a Fan" : "+ Become a Fan"}
             </button>
+
+            {inAdminMode && (
+              <button
+                onClick={handleOpenEditPerson}
+                style={{
+                  marginTop: "20px",
+                  marginLeft: "12px",
+                  padding: "12px 32px",
+                  background: "linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(168, 85, 247, 0.1))",
+                  border: "1px solid rgba(168, 85, 247, 0.5)",
+                  color: "#a855f7",
+                  borderRadius: "8px",
+                  fontWeight: "700",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = "linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(168, 85, 247, 0.2))";
+                  e.target.style.boxShadow = "0 6px 20px rgba(168, 85, 247, 0.3)";
+                  e.target.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = "linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(168, 85, 247, 0.1))";
+                  e.target.style.boxShadow = "none";
+                  e.target.style.transform = "translateY(0)";
+                }}
+              >
+                ✏️ Edit Person
+              </button>
+            )}
           </div>
 
           {person.biography && (
@@ -271,6 +370,134 @@ const PersonPage = () => {
               <p style={pageStyles.emptyStateText}>
                 No media associated with this person yet.
               </p>
+            </div>
+          )}
+
+          {showEditPersonModal && (
+            <div
+              style={{
+                position: "fixed",
+                top: "0",
+                left: "0",
+                right: "0",
+                bottom: "0",
+                background: "rgba(0, 0, 0, 0.7)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 2000,
+              }}
+              onClick={() => setShowEditPersonModal(false)}
+            >
+              <div
+                style={{
+                  background: "linear-gradient(135deg, rgba(10, 14, 39, 0.95) 0%, rgba(26, 31, 58, 0.95) 100%)",
+                  border: "1px solid rgba(168, 85, 247, 0.3)",
+                  borderRadius: "12px",
+                  padding: "32px",
+                  maxWidth: "600px",
+                  width: "90%",
+                  maxHeight: "90vh",
+                  overflowY: "auto",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 style={{ color: "#a855f7", marginBottom: "24px", fontSize: "1.5rem", fontWeight: "700" }}>Edit Person</h3>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>Name *</label>
+                  <input
+                    type="text"
+                    value={editPersonForm.name}
+                    onChange={(e) => setEditPersonForm({ ...editPersonForm, name: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "rgba(255, 90, 126, 0.1)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>Biography</label>
+                  <textarea
+                    value={editPersonForm.biography}
+                    onChange={(e) => setEditPersonForm({ ...editPersonForm, biography: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "rgba(255, 90, 126, 0.1)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                      minHeight: "120px",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>Profile Image URL</label>
+                  <input
+                    type="text"
+                    placeholder="https://example.com/image.jpg"
+                    value={editPersonForm.profile_image}
+                    onChange={(e) => setEditPersonForm({ ...editPersonForm, profile_image: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "rgba(255, 90, 126, 0.1)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    onClick={handleEditPerson}
+                    disabled={editingPerson}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "linear-gradient(135deg, #ff5a7e, #a855f7)",
+                      border: "none",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: editingPerson ? "not-allowed" : "pointer",
+                      opacity: editingPerson ? 0.7 : 1,
+                    }}
+                  >
+                    {editingPerson ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button
+                    onClick={() => setShowEditPersonModal(false)}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "rgba(168, 85, 247, 0.2)",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

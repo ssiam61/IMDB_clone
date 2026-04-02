@@ -22,8 +22,13 @@ export const getInAdminMode = () => {
 export const toggleAdminMode = () => {
   if (!getIsAdmin()) return false;
   const currentMode = getInAdminMode();
-  localStorage.setItem("inAdminMode", JSON.stringify(!currentMode));
-  return !currentMode;
+  const newMode = !currentMode;
+  localStorage.setItem("inAdminMode", JSON.stringify(newMode));
+  
+  // Dispatch custom event to notify all components
+  window.dispatchEvent(new CustomEvent("adminModeChanged", { detail: { inAdminMode: newMode } }));
+  
+  return newMode;
 };
 
 export const isAuthenticated = () => {

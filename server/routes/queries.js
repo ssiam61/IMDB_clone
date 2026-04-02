@@ -811,4 +811,82 @@ router.post("/admin/episode/add", async (req, res) => {
   }
 });
 
+// Admin endpoint for editing media
+router.put("/admin/media/edit/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, description, imdb_rating, duration, release_date, teaser_link, thumbnail } = req.body;
+
+  try {
+    if (!name) {
+      return res.json({ success: false, error: "Media name is required" });
+    }
+
+    const result = await pool.query(
+      "UPDATE media SET name=$1, description=$2, imdb_rating=$3, duration=$4, release_date=$5, teaser_link=$6, thumbnail=$7 WHERE id=$8 RETURNING *",
+      [name, description || null, imdb_rating || null, duration || null, release_date || null, teaser_link || null, thumbnail || null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Media not found" });
+    }
+
+    res.json({ success: true, media: result.rows[0] });
+  } catch (err) {
+    console.error("Error editing media:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Admin endpoint for editing season
+router.put("/admin/season/edit/:id", async (req, res) => {
+  const { id } = req.params;
+  const { number, title, release_date } = req.body;
+
+  try {
+    if (!number || !release_date) {
+      return res.json({ success: false, error: "Season number and release date are required" });
+    }
+
+    const result = await pool.query(
+      "UPDATE season SET number=$1, title=$2, release_date=$3 WHERE id=$4 RETURNING *",
+      [number, title || null, release_date, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Season not found" });
+    }
+
+    res.json({ success: true, season: result.rows[0] });
+  } catch (err) {
+    console.error("Error editing season:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Admin endpoint for editing person
+router.put("/admin/person/edit/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, biography, profile_image } = req.body;
+
+  try {
+    if (!name) {
+      return res.json({ success: false, error: "Person name is required" });
+    }
+
+    const result = await pool.query(
+      "UPDATE person SET name=$1, biography=$2, profile_image=$3 WHERE id=$4 RETURNING *",
+      [name, biography || null, profile_image || null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Person not found" });
+    }
+
+    res.json({ success: true, person: result.rows[0] });
+  } catch (err) {
+    console.error("Error editing person:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
 module.exports = router;

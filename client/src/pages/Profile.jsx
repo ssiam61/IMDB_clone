@@ -433,7 +433,7 @@ const Profile = () => {
                     e.currentTarget.style.borderColor = "rgba(255, 90, 126, 0.5)";
                   }}
                 >
-                  <div style={{ fontSize: "40px", fontWeight: "800", color: "#ff5a7e", textAlign: "center" }}>+ Add</div>
+                  <div style={{ fontSize: "40px", fontWeight: "800", color: "#ff5a7e", textAlign: "center" }}>+</div>
                 </div>
               </div>
             </div>
@@ -472,7 +472,7 @@ const Profile = () => {
                       alignItems: "center",
                       justifyContent: "center",
                       cursor: "pointer",
-                      transition: "all 0.3s ease",
+                      transition: "border-color 0.3s ease, background-color 0.3s ease",
                       background: "rgba(168, 85, 247, 0.1)",
                       flexShrink: 0,
                     }}
@@ -485,7 +485,7 @@ const Profile = () => {
                       e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.5)";
                     }}
                   >
-                    <div style={{ fontSize: "40px", fontWeight: "800", color: "#a855f7", textAlign: "center" }}>+ Add</div>
+                    <div style={{ fontSize: "40px", fontWeight: "800", color: "#a855f7", textAlign: "center" }}>+</div>
                   </div>
                 </div>
               </div>
@@ -525,7 +525,7 @@ const Profile = () => {
                       alignItems: "center",
                       justifyContent: "center",
                       cursor: "pointer",
-                      transition: "all 0.3s ease",
+                      transition: "border-color 0.3s ease, background-color 0.3s ease",
                       background: "rgba(168, 85, 247, 0.1)",
                       flexShrink: 0,
                     }}
@@ -538,7 +538,7 @@ const Profile = () => {
                       e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.5)";
                     }}
                   >
-                    <div style={{ fontSize: "40px", fontWeight: "800", color: "#a855f7", textAlign: "center" }}>+ Add</div>
+                    <div style={{ fontSize: "40px", fontWeight: "800", color: "#a855f7", textAlign: "center" }}>+</div>
                   </div>
                 </div>
               </div>

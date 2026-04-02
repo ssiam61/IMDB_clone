@@ -50,6 +50,18 @@ const UserDashboard = () => {
     fetchHome();
   }, []);
 
+  useEffect(() => {
+    // Listen for admin mode changes
+    const handleAdminModeChange = (event) => {
+      setInAdminMode(event.detail.inAdminMode);
+    };
+
+    window.addEventListener("adminModeChanged", handleAdminModeChange);
+    return () => {
+      window.removeEventListener("adminModeChanged", handleAdminModeChange);
+    };
+  }, []);
+
   const handleSearch = (e) => {
     e.preventDefault();
     console.log("Search:", searchQuery);

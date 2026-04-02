@@ -21,7 +21,7 @@ const MediaPage = () => {
   const [reviewStars, setReviewStars] = useState(0);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  const inAdminMode = getInAdminMode();
+  const [inAdminMode, setInAdminMode] = useState(getInAdminMode());
 
   // Modal states for admin functions
   const [showAddCastModal, setShowAddCastModal] = useState(false);
@@ -31,6 +31,19 @@ const MediaPage = () => {
   const [addDirectorForm, setAddDirectorForm] = useState({ person_id: "", name: "" });
   const [addSeasonForm, setAddSeasonForm] = useState({ number: "", title: "", release_date: "" });
   const [addingItem, setAddingItem] = useState(false);
+
+  // Edit media modal states
+  const [showEditMediaModal, setShowEditMediaModal] = useState(false);
+  const [editMediaForm, setEditMediaForm] = useState({
+    name: "",
+    description: "",
+    imdb_rating: "",
+    duration: "",
+    release_date: "",
+    teaser_link: "",
+    thumbnail: "",
+  });
+  const [editingMedia, setEditingMedia] = useState(false);
 
   const userId = getUser()?.id;
 
@@ -216,6 +229,18 @@ const MediaPage = () => {
     }
   }, [userId, id]);
 
+  useEffect(() => {
+    // Listen for admin mode changes
+    const handleAdminModeChange = (event) => {
+      setInAdminMode(event.detail.inAdminMode);
+    };
+
+    window.addEventListener("adminModeChanged", handleAdminModeChange);
+    return () => {
+      window.removeEventListener("adminModeChanged", handleAdminModeChange);
+    };
+  }, []);
+
   const handleAddToWatchlist = async () => {
     if (!userId) return;
     setWatchlistLoading(true);
@@ -354,6 +379,65 @@ const MediaPage = () => {
     }
   };
 
+  const handleOpenEditMedia = () => {
+    setEditMediaForm({
+      name: media.name || "",
+      description: media.description || "",
+      imdb_rating: media.imdb_rating || "",
+      duration: media.duration || "",
+      release_date: media.release_date || "",
+      teaser_link: media.teaser_link || "",
+      thumbnail: media.thumbnail || "",
+    });
+    setShowEditMediaModal(true);
+  };
+
+  const handleEditMedia = async () => {
+    if (!editMediaForm.name) {
+      alert("Media name is required");
+      return;
+    }
+    setEditingMedia(true);
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/admin/media/edit/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            name: editMediaForm.name,
+            description: editMediaForm.description,
+            imdb_rating: editMediaForm.imdb_rating ? parseFloat(editMediaForm.imdb_rating) : null,
+            duration: editMediaForm.duration,
+            release_date: editMediaForm.release_date,
+            teaser_link: editMediaForm.teaser_link,
+            thumbnail: editMediaForm.thumbnail,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setMedia(data.media);
+        setEditMediaForm({
+          name: "",
+          description: "",
+          imdb_rating: "",
+          duration: "",
+          release_date: "",
+          teaser_link: "",
+          thumbnail: "",
+        });
+        setShowEditMediaModal(false);
+        alert("Media updated successfully!");
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setEditingMedia(false);
+    }
+  };
+
   if (!media) return (
     <>
       <UserNavbar />
@@ -412,6 +496,37 @@ const MediaPage = () => {
             >
               {inWatchlist ? "✓ In Watchlist" : "+ Add to Watchlist"}
             </button>
+
+            {inAdminMode && (
+              <button
+                onClick={handleOpenEditMedia}
+                style={{
+                  marginTop: "20px",
+                  marginLeft: "12px",
+                  padding: "12px 32px",
+                  background: "linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(168, 85, 247, 0.1))",
+                  border: "1px solid rgba(168, 85, 247, 0.5)",
+                  color: "#a855f7",
+                  borderRadius: "8px",
+                  fontWeight: "700",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.background = "linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(168, 85, 247, 0.2))";
+                  e.target.style.boxShadow = "0 6px 20px rgba(168, 85, 247, 0.3)";
+                  e.target.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.background = "linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(168, 85, 247, 0.1))";
+                  e.target.style.boxShadow = "none";
+                  e.target.style.transform = "translateY(0)";
+                }}
+              >
+                ✏️ Edit Media
+              </button>
+            )}
           </div>
 
           {media.teaser_link && extractYoutubeId(media.teaser_link) ? (
@@ -993,6 +1108,215 @@ const MediaPage = () => {
                   </button>
                   <button
                     onClick={() => setShowAddSeasonModal(false)}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "rgba(168, 85, 247, 0.2)",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showEditMediaModal && (
+            <div
+              style={{
+                position: "fixed",
+                top: "0",
+                left: "0",
+                right: "0",
+                bottom: "0",
+                background: "rgba(0, 0, 0, 0.7)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 2000,
+              }}
+              onClick={() => setShowEditMediaModal(false)}
+            >
+              <div
+                style={{
+                  background: "linear-gradient(135deg, rgba(10, 14, 39, 0.95) 0%, rgba(26, 31, 58, 0.95) 100%)",
+                  border: "1px solid rgba(168, 85, 247, 0.3)",
+                  borderRadius: "12px",
+                  padding: "32px",
+                  maxWidth: "600px",
+                  width: "90%",
+                  maxHeight: "90vh",
+                  overflowY: "auto",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 style={{ color: "#a855f7", marginBottom: "24px", fontSize: "1.5rem", fontWeight: "700" }}>Edit Media</h3>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>Media Name *</label>
+                  <input
+                    type="text"
+                    value={editMediaForm.name}
+                    onChange={(e) => setEditMediaForm({ ...editMediaForm, name: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "rgba(255, 90, 126, 0.1)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>Description</label>
+                  <textarea
+                    value={editMediaForm.description}
+                    onChange={(e) => setEditMediaForm({ ...editMediaForm, description: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "rgba(255, 90, 126, 0.1)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                      minHeight: "100px",
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+                  <div>
+                    <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>IMDB Rating</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="10"
+                      value={editMediaForm.imdb_rating}
+                      onChange={(e) => setEditMediaForm({ ...editMediaForm, imdb_rating: e.target.value })}
+                      style={{
+                        width: "100%",
+                        padding: "12px",
+                        background: "rgba(255, 90, 126, 0.1)",
+                        border: "1px solid rgba(255, 90, 126, 0.3)",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                        fontSize: "14px",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>Duration (minutes)</label>
+                    <input
+                      type="number"
+                      value={editMediaForm.duration}
+                      onChange={(e) => setEditMediaForm({ ...editMediaForm, duration: e.target.value })}
+                      style={{
+                        width: "100%",
+                        padding: "12px",
+                        background: "rgba(255, 90, 126, 0.1)",
+                        border: "1px solid rgba(255, 90, 126, 0.3)",
+                        borderRadius: "8px",
+                        color: "#ffffff",
+                        fontSize: "14px",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>Release Date</label>
+                  <input
+                    type="date"
+                    value={editMediaForm.release_date}
+                    onChange={(e) => setEditMediaForm({ ...editMediaForm, release_date: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "rgba(255, 90, 126, 0.1)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>Teaser Link (YouTube)</label>
+                  <input
+                    type="text"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={editMediaForm.teaser_link}
+                    onChange={(e) => setEditMediaForm({ ...editMediaForm, teaser_link: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "rgba(255, 90, 126, 0.1)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={{ color: "#b0b8d4", fontSize: "0.875rem", fontWeight: "600", marginBottom: "6px", display: "block" }}>Thumbnail URL</label>
+                  <input
+                    type="text"
+                    placeholder="https://example.com/image.jpg"
+                    value={editMediaForm.thumbnail}
+                    onChange={(e) => setEditMediaForm({ ...editMediaForm, thumbnail: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "rgba(255, 90, 126, 0.1)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    onClick={handleEditMedia}
+                    disabled={editingMedia}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "linear-gradient(135deg, #ff5a7e, #a855f7)",
+                      border: "none",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: editingMedia ? "not-allowed" : "pointer",
+                      opacity: editingMedia ? 0.7 : 1,
+                    }}
+                  >
+                    {editingMedia ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button
+                    onClick={() => setShowEditMediaModal(false)}
                     style={{
                       flex: 1,
                       padding: "12px",

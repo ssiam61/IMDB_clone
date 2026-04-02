@@ -47,7 +47,7 @@ const AdminModePanel = () => {
       borderRadius: "12px",
       padding: "32px",
       marginTop: "20px",
-      marginBottom: "40px",
+      marginBottom: "20px",
       backdropFilter: "blur(10px)",
     },
     title: {
