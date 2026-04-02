@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
@@ -6,6 +6,12 @@ export default function HomePage() {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchTimeoutRef = useRef(null);
+  const searchContainerRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,6 +37,61 @@ export default function HomePage() {
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
   };
+
+  // Debounced search handler
+  const handleSearchChange = useCallback((e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (query.trim().length === 0) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setShowSearchResults(true);
+
+    // Set new timeout for debounced search (300ms)
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        const response = await api.get(`/search?query=${encodeURIComponent(query)}`);
+        setSearchResults(response.data || []);
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+  }, []);
+
+  const handleSearchResultClick = (mediaId) => {
+    navigate(`/media/${mediaId}`);
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowSearchResults(false);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target)
+      ) {
+        setShowSearchResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (loading) {
     return (
@@ -76,25 +137,96 @@ export default function HomePage() {
 
           {/* Search & CTA */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <div className="flex-1 sm:max-w-md glass-card-strong px-6 py-1 flex items-center rounded-full">
-              <svg
-                className="w-5 h-5 text-[#A8A8B3] mr-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            <div 
+              className="flex-1 sm:max-w-md relative" 
+              ref={searchContainerRef}
+            >
+              <div className="glass-card-strong px-6 py-1 flex items-center rounded-full">
+                <svg
+                  className="w-5 h-5 text-[#A8A8B3] mr-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search movies..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={() => searchQuery && setShowSearchResults(true)}
+                  className="flex-1 bg-transparent border-none text-white placeholder-[#A8A8B3] focus:outline-none py-3"
                 />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search movies..."
-                className="flex-1 bg-transparent border-none text-white placeholder-[#A8A8B3] focus:outline-none py-3"
-              />
+                {/* Search Loading Indicator */}
+                {isSearching && (
+                  <div className="mr-2">
+                    <div className="w-4 h-4 border-2 border-[#A8A8B3] border-t-[#E94560] rounded-full animate-spin"></div>
+                  </div>
+                )}
+              </div>
+
+              {/* Search Results Dropdown */}
+              {showSearchResults && searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-3 bg-gradient-to-b from-[rgba(22,33,62,0.95)] to-[rgba(15,52,96,0.95)] border border-white/20 rounded-lg overflow-hidden shadow-2xl backdrop-blur-lg z-50 animate-in fade-in duration-200">
+                  <div className="max-h-80 overflow-y-auto">
+                    {searchResults.map((result) => (
+                      <div
+                        key={result.id}
+                        onClick={() => handleSearchResultClick(result.id)}
+                        className="px-4 py-3 border-b border-white/10 hover:bg-white/10 transition-colors cursor-pointer last:border-b-0 group"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-white font-medium group-hover:text-[#E94560] transition-colors line-clamp-1">
+                              {result.name}
+                            </h4>
+                            {result.description && (
+                              <p className="text-[#A8A8B3] text-xs line-clamp-1 mt-1">
+                                {result.description}
+                              </p>
+                            )}
+                            {result.genres && result.genres.length > 0 && (
+                              <div className="flex gap-1 mt-1 flex-wrap">
+                                {result.genres.slice(0, 2).map((genre, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="text-xs px-2 py-0.5 bg-[#E94560]/20 text-[#E94560] rounded"
+                                  >
+                                    {genre}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className="text-[#F5C518] font-bold text-sm">
+                              ⭐ {result.imdbRating ? result.imdbRating.toFixed(1) : 'N/A'}
+                            </div>
+                            {result.type && (
+                              <div className="text-[#A8A8B3] text-xs mt-1 uppercase tracking-wide">
+                                {result.type}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty Results Message */}
+              {showSearchResults && searchQuery && searchResults.length === 0 && !isSearching && (
+                <div className="absolute top-full left-0 right-0 mt-3 bg-gradient-to-b from-[rgba(22,33,62,0.95)] to-[rgba(15,52,96,0.95)] border border-white/20 rounded-lg p-4 text-center text-[#A8A8B3] backdrop-blur-lg z-50 animate-in fade-in duration-200">
+                  No results found for "{searchQuery}"
+                </div>
+              )}
             </div>
             <button className="px-8 py-3 bg-gradient-to-r from-[#E94560] to-[#533483] text-white font-bold rounded-full hover:shadow-[0_0_30px_rgba(233,69,96,0.4)] transform hover:-translate-y-0.5 transition-all duration-300 whitespace-nowrap">
               Search
