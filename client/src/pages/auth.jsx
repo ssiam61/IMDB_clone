@@ -15,7 +15,32 @@ const Auth = () => {
     if (isAuthenticated()) {
       const user = JSON.parse(localStorage.getItem("user"));
       const token = localStorage.getItem("authToken");
-      window.location.href = "/user-dashboard";
+      
+      // Verify token is valid by checking with server before redirecting
+      const verifyAuth = async () => {
+        try {
+          const response = await fetch("http://localhost:5000/api/profile/" + user?.id, {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+            },
+          });
+          
+          if (response.status === 401) {
+            // Token expired or invalid, stay on auth page
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("user");
+            return;
+          }
+          
+          // Token is valid, redirect
+          window.location.href = user?.id ? "/user-dashboard" : "/";
+        } catch (err) {
+          // Error verifying, stay on auth page
+          console.log("Auth verification failed, staying on login page");
+        }
+      };
+      
+      verifyAuth();
     }
   }, []);
 

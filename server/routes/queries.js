@@ -426,5 +426,48 @@ router.get("/fan/user/:userId", async (req, res) => {
   }
 });
 
+router.post("/profile/update/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { name, email, bio } = req.body;
+
+  try {
+    if (!name || !email) {
+      return res.json({
+        success: false,
+        error: "Name and email are required",
+      });
+    }
+
+    const result = await pool.query(
+      `UPDATE users 
+       SET name = $1, email = $2, bio = $3
+       WHERE id = $4
+       RETURNING id, username, name, email, profile_picture, bio, created_at`,
+      [name, email, bio || "", userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
+    const updatedUser = result.rows[0];
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    res.json({
+      success: false,
+      error: "Server error while updating profile",
+    });
+  }
+});
+
 
 module.exports = router;
