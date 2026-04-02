@@ -15,14 +15,14 @@ const AdminModePanel = () => {
 
   const [personForm, setPersonForm] = useState({
     name: "",
-    occupation: "", // "actor" or "director"
+    occupation: "",
     profile_image: "",
     biography: "",
   });
 
   const [mediaForm, setMediaForm] = useState({
     name: "",
-    media_type: "movie", // "movie" or "series"
+    media_type: "movie",
     teaser_link: "",
     thumbnail: "",
     description: "",
@@ -32,12 +32,12 @@ const AdminModePanel = () => {
   });
 
   const [awardEventForm, setAwardEventForm] = useState({
-    type: "person", // "person" or "media"
+    type: "person",
     person_id: "",
     media_id: "",
     award_id: "",
     year: new Date().getFullYear().toString(),
-    result: "win", // for media_award
+    result: "win",
   });
 
   const panelStyles = {

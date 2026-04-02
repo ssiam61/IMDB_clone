@@ -24,8 +24,6 @@ export const toggleAdminMode = () => {
   const currentMode = getInAdminMode();
   const newMode = !currentMode;
   localStorage.setItem("inAdminMode", JSON.stringify(newMode));
-  
-  // Dispatch custom event to notify all components
   window.dispatchEvent(new CustomEvent("adminModeChanged", { detail: { inAdminMode: newMode } }));
   
   return newMode;

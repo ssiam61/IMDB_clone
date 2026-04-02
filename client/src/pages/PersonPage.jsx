@@ -12,10 +12,7 @@ const PersonPage = () => {
   const [mediaList, setMediaList] = useState([]);
   const [isFan, setIsFan] = useState(false);
   const [fanLoading, setFanLoading] = useState(false);
-
   const [inAdminMode, setInAdminMode] = useState(getInAdminMode());
-
-  // Edit person modal states
   const [showEditPersonModal, setShowEditPersonModal] = useState(false);
   const [editPersonForm, setEditPersonForm] = useState({
     name: "",
@@ -155,7 +152,6 @@ const PersonPage = () => {
   }, [userId, id]);
 
   useEffect(() => {
-    // Listen for admin mode changes
     const handleAdminModeChange = (event) => {
       setInAdminMode(event.detail.inAdminMode);
     };

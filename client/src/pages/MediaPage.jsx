@@ -20,10 +20,7 @@ const MediaPage = () => {
   const [reviewText, setReviewText] = useState("");
   const [reviewStars, setReviewStars] = useState(0);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
-
   const [inAdminMode, setInAdminMode] = useState(getInAdminMode());
-
-  // Modal states for admin functions
   const [showAddCastModal, setShowAddCastModal] = useState(false);
   const [showAddDirectorModal, setShowAddDirectorModal] = useState(false);
   const [showAddSeasonModal, setShowAddSeasonModal] = useState(false);
@@ -32,7 +29,6 @@ const MediaPage = () => {
   const [addSeasonForm, setAddSeasonForm] = useState({ number: "", title: "", release_date: "" });
   const [addingItem, setAddingItem] = useState(false);
 
-  // Edit media modal states
   const [showEditMediaModal, setShowEditMediaModal] = useState(false);
   const [editMediaForm, setEditMediaForm] = useState({
     name: "",
@@ -230,7 +226,6 @@ const MediaPage = () => {
   }, [userId, id]);
 
   useEffect(() => {
-    // Listen for admin mode changes
     const handleAdminModeChange = (event) => {
       setInAdminMode(event.detail.inAdminMode);
     };
@@ -438,6 +433,57 @@ const MediaPage = () => {
     }
   };
 
+  const handleDeleteDirectorFromMedia = async (personId) => {
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/admin/media-personality/remove/${id}/${personId}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setDirectors(directors.filter(d => d.id !== personId));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+  const handleDeleteCastFromMedia = async (personId) => {
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/admin/media-personality/remove/${id}/${personId}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setCast(cast.filter(c => c.id !== personId));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+  const handleDeleteSeason = async (seasonId) => {
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/admin/season/delete/${seasonId}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setSeasons(seasons.filter(s => s.id !== seasonId));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
   if (!media) return (
     <>
       <UserNavbar />
@@ -581,6 +627,8 @@ const MediaPage = () => {
                     title={dir.name}
                     type="person"
                     image={dir.profile_image}
+                    onDelete={inAdminMode ? handleDeleteDirectorFromMedia : null}
+                    showDeleteButton={inAdminMode}
                   />
                 ))}
                 {inAdminMode && (
@@ -626,6 +674,8 @@ const MediaPage = () => {
                     title={actor.name}
                     type="person"
                     image={actor.profile_image}
+                    onDelete={inAdminMode ? handleDeleteCastFromMedia : null}
+                    showDeleteButton={inAdminMode}
                   />
                 ))}
                 {inAdminMode && (
@@ -676,7 +726,12 @@ const MediaPage = () => {
               <h3 style={pageStyles.sectionTitle}>Seasons</h3>
               <div style={pageStyles.cardsContainer}>
                 {seasons.map((season) => (
-                  <SeasonCard key={season.id} season={season} />
+                  <SeasonCard 
+                    key={season.id} 
+                    season={season} 
+                    onDelete={inAdminMode ? handleDeleteSeason : null}
+                    showDeleteButton={inAdminMode}
+                  />
                 ))}
                 {inAdminMode && (
                   <div

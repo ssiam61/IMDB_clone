@@ -132,7 +132,7 @@ const Auth = () => {
                 {mode === "login" ? "!" : "Account"}
               </span>
             </h1>
-            <p style={{ color: "#b0b8d4", fontSize: "14px", margin: "8px 0 0 0" }}>
+            <p style={{ color: "#d0d8e8", fontSize: "14px", margin: "8px 0 0 0" }}>
               {mode === "login"
                 ? "Sign in to your account"
                 : "Join us and explore amazing media"}

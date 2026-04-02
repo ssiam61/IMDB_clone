@@ -7,7 +7,6 @@ const UserNavbar = () => {
   const isAdmin = getIsAdmin();
 
   useEffect(() => {
-    // Listen for admin mode changes
     const handleAdminModeChange = (event) => {
       setInAdminMode(event.detail.inAdminMode);
     };
@@ -22,7 +21,7 @@ const UserNavbar = () => {
     toggleAdminMode();
   };
   const getNavLinkStyle = ({ isActive }) => ({
-    color: isActive ? "#ff5a7e" : "#b0b8d4",
+    color: isActive ? "#ff5a7e" : "#d0d8e8",
     padding: "8px 16px",
     borderRadius: "6px",
     background: isActive ? "rgba(255, 90, 126, 0.1)" : "transparent",
@@ -96,7 +95,7 @@ const UserNavbar = () => {
                 borderRadius: "6px",
                 border: inAdminMode ? "1px solid rgba(168, 85, 247, 0.5)" : "1px solid rgba(168, 85, 247, 0.3)",
                 background: inAdminMode ? "linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(168, 85, 247, 0.1) 100%)" : "rgba(168, 85, 247, 0.1)",
-                color: inAdminMode ? "#a855f7" : "#b0b8d4",
+                color: inAdminMode ? "#a855f7" : "#d0d8e8",
                 cursor: "pointer",
                 fontWeight: "600",
                 transition: "border-color 0.3s ease, background-color 0.3s ease",

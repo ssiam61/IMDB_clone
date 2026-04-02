@@ -889,4 +889,174 @@ router.put("/admin/person/edit/:id", async (req, res) => {
   }
 });
 
+// Delete endpoints for removing items from rows
+
+// Delete from watchlist
+router.delete("/watchlist/remove/:userId/:mediaId", async (req, res) => {
+  const { userId, mediaId } = req.params;
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM watchlist WHERE user_id=$1 AND media_id=$2 RETURNING *",
+      [userId, mediaId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Not in watchlist" });
+    }
+
+    res.json({ success: true, message: "Removed from watchlist" });
+  } catch (err) {
+    console.error("Error removing from watchlist:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Delete fan relationship
+router.delete("/fan/remove/:userId/:personId", async (req, res) => {
+  const { userId, personId } = req.params;
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM fan WHERE user_id=$1 AND person_id=$2 RETURNING *",
+      [userId, personId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Not a fan" });
+    }
+
+    res.json({ success: true, message: "Unfollowed" });
+  } catch (err) {
+    console.error("Error removing fan:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Delete media-personality (cast/director)
+router.delete("/admin/media-personality/remove/:mediaId/:personId", async (req, res) => {
+  const { mediaId, personId } = req.params;
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM media_personality WHERE media_id=$1 AND person_id=$2 RETURNING *",
+      [mediaId, personId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Not found in media" });
+    }
+
+    res.json({ success: true, message: "Removed from media" });
+  } catch (err) {
+    console.error("Error removing from media:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Delete season
+router.delete("/admin/season/delete/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM season WHERE id=$1 RETURNING *",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Season not found" });
+    }
+
+    res.json({ success: true, message: "Season deleted" });
+  } catch (err) {
+    console.error("Error deleting season:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Delete episode
+router.delete("/admin/episode/delete/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM episode WHERE id=$1 RETURNING *",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Episode not found" });
+    }
+
+    res.json({ success: true, message: "Episode deleted" });
+  } catch (err) {
+    console.error("Error deleting episode:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Delete media
+router.delete("/admin/media/delete/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM media WHERE id=$1 RETURNING *",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Media not found" });
+    }
+
+    res.json({ success: true, message: "Media deleted" });
+  } catch (err) {
+    console.error("Error deleting media:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Delete award
+router.delete("/admin/award/delete/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM award WHERE id=$1 RETURNING *",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Award not found" });
+    }
+
+    res.json({ success: true, message: "Award deleted" });
+  } catch (err) {
+    console.error("Error deleting award:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Delete person
+router.delete("/admin/person/delete/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM person WHERE id=$1 RETURNING *",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Person not found" });
+    }
+
+    res.json({ success: true, message: "Person deleted" });
+  } catch (err) {
+    console.error("Error deleting person:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
 module.exports = router;

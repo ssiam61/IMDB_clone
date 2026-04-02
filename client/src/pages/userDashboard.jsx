@@ -51,7 +51,6 @@ const UserDashboard = () => {
   }, []);
 
   useEffect(() => {
-    // Listen for admin mode changes
     const handleAdminModeChange = (event) => {
       setInAdminMode(event.detail.inAdminMode);
     };
@@ -97,7 +96,7 @@ const UserDashboard = () => {
             <p
               style={{
                 fontSize: "18px",
-                color: "#b0b8d4",
+                color: "#d0d8e8",
                 marginBottom: "0",
               }}
             >
@@ -127,7 +126,7 @@ const UserDashboard = () => {
                   left: "16px",
                   top: "50%",
                   transform: "translateY(-50%)",
-                  color: "#b0b8d4",
+                  color: "#d0d8e8",
                   fontSize: "18px",
                 }}
               >
@@ -340,7 +339,7 @@ const UserDashboard = () => {
             <p
               style={{
                 fontSize: "18px",
-                color: "#b0b8d4",
+                color: "#d0d8e8",
                 marginBottom: "32px",
                 maxWidth: "600px",
                 margin: "0 auto 32px",

@@ -19,8 +19,6 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  // Modal states for adding items
   const [showAddMediaModal, setShowAddMediaModal] = useState(false);
   const [showAddActorModal, setShowAddActorModal] = useState(false);
   const [showAddDirectorModal, setShowAddDirectorModal] = useState(false);
@@ -202,6 +200,57 @@ const Profile = () => {
       alert(`Error: ${err.message}`);
     } finally {
       setAddingItem(false);
+    }
+  };
+
+  const handleDeleteFromWatchlist = async (mediaId) => {
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/watchlist/remove/${userId}/${mediaId}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setWatchlist(watchlist.filter(item => item.id !== mediaId));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+  const handleDeleteActor = async (personId) => {
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/fan/remove/${userId}/${personId}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setFavoriteActors(favoriteActors.filter(item => item.id !== personId));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+  const handleDeleteDirector = async (personId) => {
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/fan/remove/${userId}/${personId}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setFavoriteDirectors(favoriteDirectors.filter(item => item.id !== personId));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
     }
   };
 
@@ -408,6 +457,8 @@ const Profile = () => {
                     id={item.id}
                     title={item.name}
                     image={item.thumbnail}
+                    onDelete={handleDeleteFromWatchlist}
+                    showDeleteButton={true}
                   />
                 ))}
                 <div
@@ -458,6 +509,8 @@ const Profile = () => {
                         title={item.name}
                         image={item.profile_image}
                         type="person"
+                        onDelete={handleDeleteActor}
+                        showDeleteButton={true}
                       />
                     </div>
                   ))}
@@ -511,6 +564,8 @@ const Profile = () => {
                         title={item.name}
                         image={item.profile_image}
                         type="person"
+                        onDelete={handleDeleteDirector}
+                        showDeleteButton={true}
                       />
                     </div>
                   ))}

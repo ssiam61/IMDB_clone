@@ -11,14 +11,10 @@ const SeasonPage = () => {
   const [episodes, setEpisodes] = useState([]);
   const [allSeasons, setAllSeasons] = useState([]);
   const [thisIndex, setThisIndex] = useState(null);
-
   const [reviewText, setReviewText] = useState("");
   const [reviewStars, setReviewStars] = useState(0);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
-
   const [inAdminMode, setInAdminMode] = useState(getInAdminMode());
-
-  // Modal states for adding episode
   const [showAddEpisodeModal, setShowAddEpisodeModal] = useState(false);
   const [addEpisodeForm, setAddEpisodeForm] = useState({
     number: "",
@@ -27,8 +23,6 @@ const SeasonPage = () => {
     duration: "",
   });
   const [addingEpisode, setAddingEpisode] = useState(false);
-
-  // Edit season modal states
   const [showEditSeasonModal, setShowEditSeasonModal] = useState(false);
   const [editSeasonForm, setEditSeasonForm] = useState({
     number: "",
@@ -179,7 +173,6 @@ const SeasonPage = () => {
   }, [id]);
 
   useEffect(() => {
-    // Listen for admin mode changes
     const handleAdminModeChange = (event) => {
       setInAdminMode(event.detail.inAdminMode);
     };
@@ -267,6 +260,23 @@ const SeasonPage = () => {
       alert(`Error: ${err.message}`);
     } finally {
       setEditingSeason(false);
+    }
+  };
+
+  const handleDeleteEpisode = async (episodeId) => {
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/admin/episode/delete/${episodeId}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setEpisodes(episodes.filter(e => e.id !== episodeId));
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
     }
   };
 
@@ -389,7 +399,12 @@ const SeasonPage = () => {
               <h3 style={pageStyles.sectionTitle}>Episodes</h3>
               <div style={pageStyles.cardsContainer}>
                 {episodes.map((ep) => (
-                  <EpisodeCard key={ep.id} episode={ep} />
+                  <EpisodeCard 
+                    key={ep.id} 
+                    episode={ep} 
+                    onDelete={inAdminMode ? handleDeleteEpisode : null}
+                    showDeleteButton={inAdminMode}
+                  />
                 ))}
                 {inAdminMode && (
                   <div
