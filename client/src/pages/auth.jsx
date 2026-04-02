@@ -55,11 +55,7 @@ const Auth = () => {
 
         const data = await login(username, password);
 
-        if (data.isAdmin) {
-          window.location.href = "/admin-dashboard";
-        } else {
-          window.location.href = "/user-dashboard";
-        }
+        window.location.href = "/user-dashboard";
       } else {
         if (!username || !name || !email || !password || !confirmPassword) {
           setError("All fields are required");

@@ -4,7 +4,7 @@ import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
 import AwardCard from "../components/AwardCard";
 import SeasonCard from "../components/SeasonCard";
-import { authenticatedFetch, getUser } from "../utils/auth";
+import { authenticatedFetch, getUser, getInAdminMode } from "../utils/auth";
 
 const MediaPage = () => {
   const { id } = useParams();
@@ -20,6 +20,17 @@ const MediaPage = () => {
   const [reviewText, setReviewText] = useState("");
   const [reviewStars, setReviewStars] = useState(0);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  const inAdminMode = getInAdminMode();
+
+  // Modal states for admin functions
+  const [showAddCastModal, setShowAddCastModal] = useState(false);
+  const [showAddDirectorModal, setShowAddDirectorModal] = useState(false);
+  const [showAddSeasonModal, setShowAddSeasonModal] = useState(false);
+  const [addCastForm, setAddCastForm] = useState({ person_id: "", name: "" });
+  const [addDirectorForm, setAddDirectorForm] = useState({ person_id: "", name: "" });
+  const [addSeasonForm, setAddSeasonForm] = useState({ number: "", title: "", release_date: "" });
+  const [addingItem, setAddingItem] = useState(false);
 
   const userId = getUser()?.id;
 
@@ -243,6 +254,106 @@ const MediaPage = () => {
     }
   };
 
+  const handleAddCast = async () => {
+    if (!addCastForm.person_id) {
+      alert("Please enter a person ID");
+      return;
+    }
+    setAddingItem(true);
+    try {
+      const res = await authenticatedFetch(
+        "http://localhost:5000/api/admin/media-personality/add",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            media_id: id,
+            person_id: addCastForm.person_id,
+            role: "actor",
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setCast([...cast, { id: addCastForm.person_id, name: addCastForm.name, profile_image: null }]);
+        setAddCastForm({ person_id: "", name: "" });
+        setShowAddCastModal(false);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setAddingItem(false);
+    }
+  };
+
+  const handleAddDirector = async () => {
+    if (!addDirectorForm.person_id) {
+      alert("Please enter a person ID");
+      return;
+    }
+    setAddingItem(true);
+    try {
+      const res = await authenticatedFetch(
+        "http://localhost:5000/api/admin/media-personality/add",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            media_id: id,
+            person_id: addDirectorForm.person_id,
+            role: "director",
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setDirectors([...directors, { id: addDirectorForm.person_id, name: addDirectorForm.name, profile_image: null }]);
+        setAddDirectorForm({ person_id: "", name: "" });
+        setShowAddDirectorModal(false);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setAddingItem(false);
+    }
+  };
+
+  const handleAddSeason = async () => {
+    if (!addSeasonForm.number || !addSeasonForm.release_date) {
+      alert("Season number and release date are required");
+      return;
+    }
+    setAddingItem(true);
+    try {
+      const res = await authenticatedFetch(
+        "http://localhost:5000/api/admin/season/add",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            media_id: id,
+            number: parseInt(addSeasonForm.number),
+            title: addSeasonForm.title || null,
+            release_date: addSeasonForm.release_date,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setSeasons([...seasons, data.season]);
+        setAddSeasonForm({ number: "", title: "", release_date: "" });
+        setShowAddSeasonModal(false);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setAddingItem(false);
+    }
+  };
+
   if (!media) return (
     <>
       <UserNavbar />
@@ -357,6 +468,34 @@ const MediaPage = () => {
                     image={dir.profile_image}
                   />
                 ))}
+                {inAdminMode && (
+                  <div
+                    onClick={() => setShowAddDirectorModal(true)}
+                    style={{
+                      width: "160px",
+                      height: "200px",
+                      borderRadius: "12px",
+                      border: "2px dashed rgba(168, 85, 247, 0.5)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                      background: "rgba(168, 85, 247, 0.1)",
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(168, 85, 247, 0.2)";
+                      e.currentTarget.style.borderColor = "#a855f7";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(168, 85, 247, 0.1)";
+                      e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.5)";
+                    }}
+                  >
+                    <div style={{ fontSize: "40px", fontWeight: "800", color: "#a855f7" }}>+</div>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -374,6 +513,34 @@ const MediaPage = () => {
                     image={actor.profile_image}
                   />
                 ))}
+                {inAdminMode && (
+                  <div
+                    onClick={() => setShowAddCastModal(true)}
+                    style={{
+                      width: "160px",
+                      height: "200px",
+                      borderRadius: "12px",
+                      border: "2px dashed rgba(168, 85, 247, 0.5)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                      background: "rgba(168, 85, 247, 0.1)",
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(168, 85, 247, 0.2)";
+                      e.currentTarget.style.borderColor = "#a855f7";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(168, 85, 247, 0.1)";
+                      e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.5)";
+                    }}
+                  >
+                    <div style={{ fontSize: "40px", fontWeight: "800", color: "#a855f7" }}>+</div>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -396,6 +563,34 @@ const MediaPage = () => {
                 {seasons.map((season) => (
                   <SeasonCard key={season.id} season={season} />
                 ))}
+                {inAdminMode && (
+                  <div
+                    onClick={() => setShowAddSeasonModal(true)}
+                    style={{
+                      width: "160px",
+                      height: "200px",
+                      borderRadius: "12px",
+                      border: "2px dashed rgba(168, 85, 247, 0.5)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                      background: "rgba(168, 85, 247, 0.1)",
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(168, 85, 247, 0.2)";
+                      e.currentTarget.style.borderColor = "#a855f7";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(168, 85, 247, 0.1)";
+                      e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.5)";
+                    }}
+                  >
+                    <div style={{ fontSize: "40px", fontWeight: "800", color: "#a855f7" }}>+</div>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -507,6 +702,314 @@ const MediaPage = () => {
           <p style={{ color: "#a0aec0", textAlign: "center", padding: "20px" }}>
             No reviews yet — coming soon.
           </p>
+
+          {/* Add Director Modal */}
+          {showAddDirectorModal && (
+            <div style={{
+              position: "fixed",
+              top: "0",
+              left: "0",
+              right: "0",
+              bottom: "0",
+              background: "rgba(0, 0, 0, 0.7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: "2000",
+            }}>
+              <div style={{
+                background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)",
+                padding: "32px",
+                borderRadius: "12px",
+                border: "1px solid rgba(168, 85, 247, 0.3)",
+                maxWidth: "500px",
+                width: "90%",
+              }}>
+                <h3 style={{ color: "#a855f7", marginBottom: "20px" }}>Add Director</h3>
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Person ID *</label>
+                  <input
+                    type="number"
+                    value={addDirectorForm.person_id}
+                    onChange={(e) => setAddDirectorForm({ ...addDirectorForm, person_id: e.target.value })}
+                    placeholder="Enter person ID"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "#254061",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Name (for reference)</label>
+                  <input
+                    type="text"
+                    value={addDirectorForm.name}
+                    onChange={(e) => setAddDirectorForm({ ...addDirectorForm, name: e.target.value })}
+                    placeholder="Enter name"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "#254061",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    onClick={handleAddDirector}
+                    disabled={addingItem}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "linear-gradient(135deg, #a855f7, #668ef7)",
+                      border: "none",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      opacity: addingItem ? 0.7 : 1,
+                    }}
+                  >
+                    {addingItem ? "Adding..." : "Add"}
+                  </button>
+                  <button
+                    onClick={() => setShowAddDirectorModal(false)}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "rgba(168, 85, 247, 0.2)",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Add Cast Modal */}
+          {showAddCastModal && (
+            <div style={{
+              position: "fixed",
+              top: "0",
+              left: "0",
+              right: "0",
+              bottom: "0",
+              background: "rgba(0, 0, 0, 0.7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: "2000",
+            }}>
+              <div style={{
+                background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)",
+                padding: "32px",
+                borderRadius: "12px",
+                border: "1px solid rgba(168, 85, 247, 0.3)",
+                maxWidth: "500px",
+                width: "90%",
+              }}>
+                <h3 style={{ color: "#a855f7", marginBottom: "20px" }}>Add Cast Member</h3>
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Person ID *</label>
+                  <input
+                    type="number"
+                    value={addCastForm.person_id}
+                    onChange={(e) => setAddCastForm({ ...addCastForm, person_id: e.target.value })}
+                    placeholder="Enter person ID"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "#254061",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Name (for reference)</label>
+                  <input
+                    type="text"
+                    value={addCastForm.name}
+                    onChange={(e) => setAddCastForm({ ...addCastForm, name: e.target.value })}
+                    placeholder="Enter name"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "#254061",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    onClick={handleAddCast}
+                    disabled={addingItem}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "linear-gradient(135deg, #a855f7, #668ef7)",
+                      border: "none",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      opacity: addingItem ? 0.7 : 1,
+                    }}
+                  >
+                    {addingItem ? "Adding..." : "Add"}
+                  </button>
+                  <button
+                    onClick={() => setShowAddCastModal(false)}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "rgba(168, 85, 247, 0.2)",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Add Season Modal */}
+          {showAddSeasonModal && (
+            <div style={{
+              position: "fixed",
+              top: "0",
+              left: "0",
+              right: "0",
+              bottom: "0",
+              background: "rgba(0, 0, 0, 0.7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: "2000",
+            }}>
+              <div style={{
+                background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)",
+                padding: "32px",
+                borderRadius: "12px",
+                border: "1px solid rgba(168, 85, 247, 0.3)",
+                maxWidth: "500px",
+                width: "90%",
+              }}>
+                <h3 style={{ color: "#a855f7", marginBottom: "20px" }}>Add Season</h3>
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Season Number *</label>
+                  <input
+                    type="number"
+                    value={addSeasonForm.number}
+                    onChange={(e) => setAddSeasonForm({ ...addSeasonForm, number: e.target.value })}
+                    placeholder="e.g., 1"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "#254061",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Title</label>
+                  <input
+                    type="text"
+                    value={addSeasonForm.title}
+                    onChange={(e) => setAddSeasonForm({ ...addSeasonForm, title: e.target.value })}
+                    placeholder="Season title (optional)"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "#254061",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Release Date *</label>
+                  <input
+                    type="date"
+                    value={addSeasonForm.release_date}
+                    onChange={(e) => setAddSeasonForm({ ...addSeasonForm, release_date: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "#254061",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    onClick={handleAddSeason}
+                    disabled={addingItem}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "linear-gradient(135deg, #a855f7, #668ef7)",
+                      border: "none",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      opacity: addingItem ? 0.7 : 1,
+                    }}
+                  >
+                    {addingItem ? "Adding..." : "Add"}
+                  </button>
+                  <button
+                    onClick={() => setShowAddSeasonModal(false)}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "rgba(168, 85, 247, 0.2)",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

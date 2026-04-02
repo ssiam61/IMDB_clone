@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
 import CategoryRow from "../components/CategoryRow";
-import { authenticatedFetch, getUser } from "../utils/auth";
+import AdminModePanel from "../components/AdminModePanel";
+import { authenticatedFetch, getUser, getInAdminMode } from "../utils/auth";
 
 const UserDashboard = () => {
   const [allMedia, setAllMedia] = useState([]);
@@ -15,6 +16,7 @@ const UserDashboard = () => {
   const [starStudded, setStarStudded] = useState([]);
   const [directedByFavorites, setDirectedByFavorites] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [inAdminMode, setInAdminMode] = useState(getInAdminMode());
 
   useEffect(() => {
     const fetchHome = async () => {
@@ -56,6 +58,8 @@ const UserDashboard = () => {
   return (
     <>
       <UserNavbar />
+
+      {inAdminMode && <AdminModePanel />}
 
       <div
         style={{

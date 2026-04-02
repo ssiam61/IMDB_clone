@@ -1,8 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { logout } from "../utils/auth";
+import { logout, getIsAdmin, getInAdminMode, toggleAdminMode } from "../utils/auth";
 
 const UserNavbar = () => {
+  const [inAdminMode, setInAdminMode] = useState(getInAdminMode());
+  const isAdmin = getIsAdmin();
+
+  const handleAdminToggle = () => {
+    toggleAdminMode();
+    setInAdminMode(!inAdminMode);
+  };
   const getNavLinkStyle = ({ isActive }) => ({
     color: isActive ? "#ff5a7e" : "#b0b8d4",
     padding: "8px 16px",
@@ -69,6 +76,33 @@ const UserNavbar = () => {
           >
             Notifications
           </NavLink>
+
+          {isAdmin && (
+            <button
+              onClick={handleAdminToggle}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "6px",
+                border: inAdminMode ? "1px solid rgba(168, 85, 247, 0.5)" : "1px solid rgba(168, 85, 247, 0.3)",
+                background: inAdminMode ? "from linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(168, 85, 247, 0.1) 100%)" : "rgba(168, 85, 247, 0.1)",
+                color: inAdminMode ? "#a855f7" : "#b0b8d4",
+                cursor: "pointer",
+                fontWeight: "600",
+                transition: "all 0.3s ease",
+                marginLeft: "8px",
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = inAdminMode ? "rgba(168, 85, 247, 0.2)" : "rgba(168, 85, 247, 0.15)";
+                e.target.style.borderColor = "#a855f7";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = inAdminMode ? "rgba(168, 85, 247, 0.15)" : "rgba(168, 85, 247, 0.1)";
+                e.target.style.borderColor = inAdminMode ? "rgba(168, 85, 247, 0.5)" : "rgba(168, 85, 247, 0.3)";
+              }}
+            >
+              {inAdminMode ? "🔩 Surf as User" : "🔧 Enter Admin Mode"}
+            </button>
+          )}
 
           <button
             onClick={logout}

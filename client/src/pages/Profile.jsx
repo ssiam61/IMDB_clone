@@ -20,6 +20,15 @@ const Profile = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Modal states for adding items
+  const [showAddMediaModal, setShowAddMediaModal] = useState(false);
+  const [showAddActorModal, setShowAddActorModal] = useState(false);
+  const [showAddDirectorModal, setShowAddDirectorModal] = useState(false);
+  const [addMediaForm, setAddMediaForm] = useState({ media_id: "", name: "" });
+  const [addActorForm, setAddActorForm] = useState({ person_id: "", name: "" });
+  const [addDirectorForm, setAddDirectorForm] = useState({ person_id: "", name: "" });
+  const [addingItem, setAddingItem] = useState(false);
+
   const storedUser = getUser();
   const userId = storedUser?.id;
 
@@ -115,6 +124,84 @@ const Profile = () => {
       setError(err.message || "Failed to update profile");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddMedia = async () => {
+    if (!addMediaForm.media_id) {
+      alert("Please enter a media ID");
+      return;
+    }
+    setAddingItem(true);
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/watchlist/add/${userId}/${addMediaForm.media_id}`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setWatchlist([...watchlist, { id: addMediaForm.media_id, name: addMediaForm.name }]);
+        setAddMediaForm({ media_id: "", name: "" });
+        setShowAddMediaModal(false);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setAddingItem(false);
+    }
+  };
+
+  const handleAddActor = async () => {
+    if (!addActorForm.person_id) {
+      alert("Please enter a person ID");
+      return;
+    }
+    setAddingItem(true);
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/fan/add/${userId}/${addActorForm.person_id}`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setFavoriteActors([...favoriteActors, { id: addActorForm.person_id, name: addActorForm.name }]);
+        setAddActorForm({ person_id: "", name: "" });
+        setShowAddActorModal(false);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setAddingItem(false);
+    }
+  };
+
+  const handleAddDirector = async () => {
+    if (!addDirectorForm.person_id) {
+      alert("Please enter a person ID");
+      return;
+    }
+    setAddingItem(true);
+    try {
+      const res = await authenticatedFetch(
+        `http://localhost:5000/api/fan/add/${userId}/${addDirectorForm.person_id}`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setFavoriteDirectors([...favoriteDirectors, { id: addDirectorForm.person_id, name: addDirectorForm.name }]);
+        setAddDirectorForm({ person_id: "", name: "" });
+        setShowAddDirectorModal(false);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setAddingItem(false);
     }
   };
 
@@ -323,19 +410,138 @@ const Profile = () => {
                     image={item.thumbnail}
                   />
                 ))}
+                <div
+                  onClick={() => setShowAddMediaModal(true)}
+                  style={{
+                    width: "140px",
+                    height: "180px",
+                    borderRadius: "12px",
+                    border: "2px dashed rgba(255, 90, 126, 0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    background: "rgba(255, 90, 126, 0.1)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255, 90, 126, 0.2)";
+                    e.currentTarget.style.borderColor = "#ff5a7e";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(255, 90, 126, 0.1)";
+                    e.currentTarget.style.borderColor = "rgba(255, 90, 126, 0.5)";
+                  }}
+                >
+                  <div style={{ fontSize: "40px", fontWeight: "800", color: "#ff5a7e", textAlign: "center" }}>+ Add</div>
+                </div>
               </div>
             </div>
           )}
 
           {favoriteActors.length > 0 && (
             <div style={{ marginBottom: "60px" }}>
-              <CategoryRow title="🎬 Your Favorite Actors" list={favoriteActors} type="person" />
+              <div style={{ marginBottom: "20px" }}>
+                <h3 style={{ color: "#ff5a7e", fontSize: "1.3rem", fontWeight: "700", marginBottom: "16px" }}>🎬 Your Favorite Actors</h3>
+                <div style={{
+                  display: "flex",
+                  overflowX: "auto",
+                  gap: "20px",
+                  paddingBottom: "10px",
+                  paddingTop: "5px",
+                  whiteSpace: "nowrap"
+                }}>
+                  {favoriteActors.map((item) => (
+                    <div key={item.id} style={{ flexShrink: 0 }}>
+                      <MediaCard
+                        id={item.id}
+                        title={item.name}
+                        image={item.profile_image}
+                        type="person"
+                      />
+                    </div>
+                  ))}
+                  <div
+                    onClick={() => setShowAddActorModal(true)}
+                    style={{
+                      width: "140px",
+                      height: "180px",
+                      borderRadius: "12px",
+                      border: "2px dashed rgba(168, 85, 247, 0.5)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                      background: "rgba(168, 85, 247, 0.1)",
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(168, 85, 247, 0.2)";
+                      e.currentTarget.style.borderColor = "#a855f7";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(168, 85, 247, 0.1)";
+                      e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.5)";
+                    }}
+                  >
+                    <div style={{ fontSize: "40px", fontWeight: "800", color: "#a855f7", textAlign: "center" }}>+ Add</div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
           {favoriteDirectors.length > 0 && (
             <div style={{ marginBottom: "60px" }}>
-              <CategoryRow title="🎥 Your Favorite Directors" list={favoriteDirectors} type="person" />
+              <div style={{ marginBottom: "20px" }}>
+                <h3 style={{ color: "#ff5a7e", fontSize: "1.3rem", fontWeight: "700", marginBottom: "16px" }}>🎥 Your Favorite Directors</h3>
+                <div style={{
+                  display: "flex",
+                  overflowX: "auto",
+                  gap: "20px",
+                  paddingBottom: "10px",
+                  paddingTop: "5px",
+                  whiteSpace: "nowrap"
+                }}>
+                  {favoriteDirectors.map((item) => (
+                    <div key={item.id} style={{ flexShrink: 0 }}>
+                      <MediaCard
+                        id={item.id}
+                        title={item.name}
+                        image={item.profile_image}
+                        type="person"
+                      />
+                    </div>
+                  ))}
+                  <div
+                    onClick={() => setShowAddDirectorModal(true)}
+                    style={{
+                      width: "140px",
+                      height: "180px",
+                      borderRadius: "12px",
+                      border: "2px dashed rgba(168, 85, 247, 0.5)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                      background: "rgba(168, 85, 247, 0.1)",
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(168, 85, 247, 0.2)";
+                      e.currentTarget.style.borderColor = "#a855f7";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(168, 85, 247, 0.1)";
+                      e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.5)";
+                    }}
+                  >
+                    <div style={{ fontSize: "40px", fontWeight: "800", color: "#a855f7", textAlign: "center" }}>+ Add</div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -686,6 +892,297 @@ const Profile = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Add Media Modal */}
+        {showAddMediaModal && (
+          <div style={{
+            position: "fixed",
+            top: "0",
+            left: "0",
+            right: "0",
+            bottom: "0",
+            background: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: "2000",
+          }}>
+            <div style={{
+              background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)",
+              padding: "32px",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 90, 126, 0.3)",
+              maxWidth: "500px",
+              width: "90%",
+            }}>
+              <h3 style={{ color: "#ff5a7e", marginBottom: "20px" }}>📌 Add to Watchlist</h3>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Media ID *</label>
+                <input
+                  type="number"
+                  value={addMediaForm.media_id}
+                  onChange={(e) => setAddMediaForm({ ...addMediaForm, media_id: e.target.value })}
+                  placeholder="Enter media ID"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#254061",
+                    border: "1px solid rgba(255, 90, 126, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Title (for reference)</label>
+                <input
+                  type="text"
+                  value={addMediaForm.name}
+                  onChange={(e) => setAddMediaForm({ ...addMediaForm, name: e.target.value })}
+                  placeholder="Enter title"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#254061",
+                    border: "1px solid rgba(255, 90, 126, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={handleAddMedia}
+                  disabled={addingItem}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "linear-gradient(135deg, #ff5a7e, #a855f7)",
+                    border: "none",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    opacity: addingItem ? 0.7 : 1,
+                  }}
+                >
+                  {addingItem ? "Adding..." : "Add"}
+                </button>
+                <button
+                  onClick={() => setShowAddMediaModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "rgba(255, 90, 126, 0.2)",
+                    border: "1px solid rgba(255, 90, 126, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Actor Modal */}
+        {showAddActorModal && (
+          <div style={{
+            position: "fixed",
+            top: "0",
+            left: "0",
+            right: "0",
+            bottom: "0",
+            background: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: "2000",
+          }}>
+            <div style={{
+              background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)",
+              padding: "32px",
+              borderRadius: "12px",
+              border: "1px solid rgba(168, 85, 247, 0.3)",
+              maxWidth: "500px",
+              width: "90%",
+            }}>
+              <h3 style={{ color: "#a855f7", marginBottom: "20px" }}>🎬 Add Favorite Actor</h3>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Person ID *</label>
+                <input
+                  type="number"
+                  value={addActorForm.person_id}
+                  onChange={(e) => setAddActorForm({ ...addActorForm, person_id: e.target.value })}
+                  placeholder="Enter person ID"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#254061",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Name (for reference)</label>
+                <input
+                  type="text"
+                  value={addActorForm.name}
+                  onChange={(e) => setAddActorForm({ ...addActorForm, name: e.target.value })}
+                  placeholder="Enter name"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#254061",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={handleAddActor}
+                  disabled={addingItem}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "linear-gradient(135deg, #a855f7, #668ef7)",
+                    border: "none",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    opacity: addingItem ? 0.7 : 1,
+                  }}
+                >
+                  {addingItem ? "Adding..." : "Add"}
+                </button>
+                <button
+                  onClick={() => setShowAddActorModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "rgba(168, 85, 247, 0.2)",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Director Modal */}
+        {showAddDirectorModal && (
+          <div style={{
+            position: "fixed",
+            top: "0",
+            left: "0",
+            right: "0",
+            bottom: "0",
+            background: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: "2000",
+          }}>
+            <div style={{
+              background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)",
+              padding: "32px",
+              borderRadius: "12px",
+              border: "1px solid rgba(168, 85, 247, 0.3)",
+              maxWidth: "500px",
+              width: "90%",
+            }}>
+              <h3 style={{ color: "#a855f7", marginBottom: "20px" }}>🎥 Add Favorite Director</h3>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Person ID *</label>
+                <input
+                  type="number"
+                  value={addDirectorForm.person_id}
+                  onChange={(e) => setAddDirectorForm({ ...addDirectorForm, person_id: e.target.value })}
+                  placeholder="Enter person ID"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#254061",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Name (for reference)</label>
+                <input
+                  type="text"
+                  value={addDirectorForm.name}
+                  onChange={(e) => setAddDirectorForm({ ...addDirectorForm, name: e.target.value })}
+                  placeholder="Enter name"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#254061",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={handleAddDirector}
+                  disabled={addingItem}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "linear-gradient(135deg, #a855f7, #668ef7)",
+                    border: "none",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    opacity: addingItem ? 0.7 : 1,
+                  }}
+                >
+                  {addingItem ? "Adding..." : "Add"}
+                </button>
+                <button
+                  onClick={() => setShowAddDirectorModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "rgba(168, 85, 247, 0.2)",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}

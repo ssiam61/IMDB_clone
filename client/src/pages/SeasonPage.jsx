@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import UserNavbar from "../components/UserNavbar";
 import EpisodeCard from "../components/EpisodeCard";
+import { authenticatedFetch, getInAdminMode } from "../utils/auth";
 
 const SeasonPage = () => {
   const { id } = useParams();
@@ -14,6 +15,18 @@ const SeasonPage = () => {
   const [reviewText, setReviewText] = useState("");
   const [reviewStars, setReviewStars] = useState(0);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  const inAdminMode = getInAdminMode();
+
+  // Modal states for adding episode
+  const [showAddEpisodeModal, setShowAddEpisodeModal] = useState(false);
+  const [addEpisodeForm, setAddEpisodeForm] = useState({
+    number: "",
+    title: "",
+    release_date: "",
+    duration: "",
+  });
+  const [addingEpisode, setAddingEpisode] = useState(false);
 
   const pageStyles = {
     container: {
@@ -156,6 +169,41 @@ const SeasonPage = () => {
     loadSeason();
   }, [id]);
 
+  const handleAddEpisode = async () => {
+    if (!addEpisodeForm.number) {
+      alert("Episode number is required");
+      return;
+    }
+    setAddingEpisode(true);
+    try {
+      const res = await authenticatedFetch(
+        "http://localhost:5000/api/admin/episode/add",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            season_id: id,
+            number: parseInt(addEpisodeForm.number),
+            title: addEpisodeForm.title || null,
+            release_date: addEpisodeForm.release_date || null,
+            duration: addEpisodeForm.duration ? parseInt(addEpisodeForm.duration) : null,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setEpisodes([...episodes, data.episode]);
+        setAddEpisodeForm({ number: "", title: "", release_date: "", duration: "" });
+        setShowAddEpisodeModal(false);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setAddingEpisode(false);
+    }
+  };
+
   if (!season) return (
     <>
       <UserNavbar />
@@ -249,6 +297,34 @@ const SeasonPage = () => {
                 {episodes.map((ep) => (
                   <EpisodeCard key={ep.id} episode={ep} />
                 ))}
+                {inAdminMode && (
+                  <div
+                    onClick={() => setShowAddEpisodeModal(true)}
+                    style={{
+                      width: "160px",
+                      height: "200px",
+                      borderRadius: "12px",
+                      border: "2px dashed rgba(168, 85, 247, 0.5)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                      background: "rgba(168, 85, 247, 0.1)",
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(168, 85, 247, 0.2)";
+                      e.currentTarget.style.borderColor = "#a855f7";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(168, 85, 247, 0.1)";
+                      e.currentTarget.style.borderColor = "rgba(168, 85, 247, 0.5)";
+                    }}
+                  >
+                    <div style={{ fontSize: "40px", fontWeight: "800", color: "#a855f7" }}>+</div>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -360,6 +436,138 @@ const SeasonPage = () => {
           <p style={{ color: "#a0aec0", textAlign: "center", padding: "20px" }}>
             No reviews yet — coming soon.
           </p>
+
+          {/* Add Episode Modal */}
+          {showAddEpisodeModal && (
+            <div style={{
+              position: "fixed",
+              top: "0",
+              left: "0",
+              right: "0",
+              bottom: "0",
+              background: "rgba(0, 0, 0, 0.7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: "2000",
+            }}>
+              <div style={{
+                background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)",
+                padding: "32px",
+                borderRadius: "12px",
+                border: "1px solid rgba(168, 85, 247, 0.3)",
+                maxWidth: "500px",
+                width: "90%",
+              }}>
+                <h3 style={{ color: "#a855f7", marginBottom: "20px" }}>Add Episode</h3>
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Episode Number *</label>
+                  <input
+                    type="number"
+                    value={addEpisodeForm.number}
+                    onChange={(e) => setAddEpisodeForm({ ...addEpisodeForm, number: e.target.value })}
+                    placeholder="e.g., 1"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "#254061",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Title</label>
+                  <input
+                    type="text"
+                    value={addEpisodeForm.title}
+                    onChange={(e) => setAddEpisodeForm({ ...addEpisodeForm, title: e.target.value })}
+                    placeholder="Episode title (optional)"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "#254061",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Release Date</label>
+                  <input
+                    type="date"
+                    value={addEpisodeForm.release_date}
+                    onChange={(e) => setAddEpisodeForm({ ...addEpisodeForm, release_date: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "#254061",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Duration (minutes)</label>
+                  <input
+                    type="number"
+                    value={addEpisodeForm.duration}
+                    onChange={(e) => setAddEpisodeForm({ ...addEpisodeForm, duration: e.target.value })}
+                    placeholder="Duration in minutes (optional)"
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "#254061",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    onClick={handleAddEpisode}
+                    disabled={addingEpisode}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "linear-gradient(135deg, #a855f7, #668ef7)",
+                      border: "none",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      opacity: addingEpisode ? 0.7 : 1,
+                    }}
+                  >
+                    {addingEpisode ? "Adding..." : "Add"}
+                  </button>
+                  <button
+                    onClick={() => setShowAddEpisodeModal(false)}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "rgba(168, 85, 247, 0.2)",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

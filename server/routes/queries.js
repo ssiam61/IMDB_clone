@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require("../db");
 
 router.post("/auth/login", async (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, password } = req.body;
 
   try {
     const userQuery = "SELECT * FROM users WHERE username = $1";
@@ -17,19 +17,13 @@ router.post("/auth/login", async (req, res) => {
     if (user.password !== password)
       return res.json({ success: false, error: "Invalid username or password" });
 
-    let isAdmin = false;
+    // Check if user is an admin
+    const adminCheck = await pool.query(
+      "SELECT * FROM admin WHERE user_id = $1",
+      [user.id]
+    );
 
-    if (role === "admin") {
-      const adminCheck = await pool.query(
-        "SELECT * FROM admin WHERE user_id = $1",
-        [user.id]
-      );
-
-      if (adminCheck.rows.length === 0)
-        return res.json({ success: false, error: "This user is not an admin" });
-
-      isAdmin = true;
-    }
+    const isAdmin = adminCheck.rows.length > 0;
 
     delete user.password;
 
@@ -41,7 +35,7 @@ router.post("/auth/login", async (req, res) => {
 });
 
 router.post("/auth/signup", async (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, name, email, password } = req.body;
 
   try {
     const existsCheck = await pool.query(
@@ -57,27 +51,18 @@ router.post("/auth/signup", async (req, res) => {
 
     const newUserRes = await pool.query(insertUser, [
       username,
-      username,
-      `${username}@example.com`,
+      name,
+      email,
       password,
       "",
       "",
     ]);
 
     const newUser = newUserRes.rows[0];
-    let isAdmin = false;
-
-    if (role === "admin") {
-      await pool.query(
-        "INSERT INTO admin (user_id, role) VALUES ($1,'moderator')",
-        [newUser.id]
-      );
-      isAdmin = true;
-    }
 
     delete newUser.password;
 
-    res.json({ success: true, user: newUser, isAdmin });
+    res.json({ success: true, user: newUser, isAdmin: false });
   } catch (err) {
     console.error(err);
     res.json({ success: false, error: "Server error" });
@@ -611,5 +596,219 @@ router.post("/profile/update/:userId", async (req, res) => {
   }
 });
 
+// Admin endpoints for creating new content
+
+// Add new award
+router.post("/admin/award/add", async (req, res) => {
+  const { name, awarded_by, prize_money } = req.body;
+
+  try {
+    if (!name || !awarded_by) {
+      return res.json({ success: false, error: "Name and awarded_by are required" });
+    }
+
+    const result = await pool.query(
+      "INSERT INTO award (name, awarded_by, prize_money) VALUES ($1, $2, $3) RETURNING *",
+      [name, awarded_by, prize_money || null]
+    );
+
+    res.json({ success: true, award: result.rows[0] });
+  } catch (err) {
+    console.error("Error adding award:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Add new person (actor/director)
+router.post("/admin/person/add", async (req, res) => {
+  const { name, occupation, profile_image, biography } = req.body;
+
+  try {
+    if (!name || !occupation) {
+      return res.json({ success: false, error: "Name and occupation are required" });
+    }
+
+    const result = await pool.query(
+      "INSERT INTO person (name, occupation, profile_image, biography) VALUES ($1, $2, $3, $4) RETURNING *",
+      [name, occupation, profile_image || null, biography || null]
+    );
+
+    res.json({ success: true, person: result.rows[0] });
+  } catch (err) {
+    console.error("Error adding person:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Add new media (movie or series)
+router.post("/admin/media/add", async (req, res) => {
+  const { name, media_type, teaser_link, thumbnail, description, imdb_rating, duration, release_date } = req.body;
+
+  try {
+    if (!name || !media_type || !release_date) {
+      return res.json({ success: false, error: "Name, media_type, and release_date are required" });
+    }
+
+    const mediaResult = await pool.query(
+      "INSERT INTO media (name, media_type, teaser_link, thumbnail, description, imdb_rating, duration, release_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
+      [name, media_type, teaser_link || null, thumbnail || null, description || null, imdb_rating || null, duration || null, release_date]
+    );
+
+    const media = mediaResult.rows[0];
+
+    // Create movie or series entry
+    if (media_type === "movie") {
+      await pool.query("INSERT INTO movie (media_id) VALUES ($1)", [media.id]);
+    } else if (media_type === "series") {
+      await pool.query("INSERT INTO series (media_id) VALUES ($1)", [media.id]);
+    }
+
+    res.json({ success: true, media });
+  } catch (err) {
+    console.error("Error adding media:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// Add person award event
+router.post("/admin/award-event/add-person", async (req, res) => {
+  const { person_id, award_id, year } = req.body;
+
+  try {
+    if (!person_id || !award_id || !year) {
+      return res.json({ success: false, error: "Person ID, award ID, and year are required" });
+    }
+
+    const result = await pool.query(
+      "INSERT INTO person_award (person_id, award_id, year) VALUES ($1, $2, $3) RETURNING *",
+      [person_id, award_id, year]
+    );
+
+    res.json({ success: true, personAward: result.rows[0] });
+  } catch (err) {
+    console.error("Error adding person award:", err);
+    if (err.code === "23505") {
+      res.json({ success: false, error: "This award entry already exists for this person and year" });
+    } else {
+      res.json({ success: false, error: "Server error" });
+    }
+  }
+});
+
+// Add media award event
+router.post("/admin/award-event/add-media", async (req, res) => {
+  const { media_id, award_id, year, result } = req.body;
+
+  try {
+    if (!media_id || !award_id || !year || !result) {
+      return res.json({ success: false, error: "Media ID, award ID, year, and result are required" });
+    }
+
+    const queryResult = await pool.query(
+      "INSERT INTO media_award (media_id, award_id, year, result) VALUES ($1, $2, $3, $4) RETURNING *",
+      [media_id, award_id, year, result]
+    );
+
+    res.json({ success: true, mediaAward: queryResult.rows[0] });
+  } catch (err) {
+    console.error("Error adding media award:", err);
+    if (err.code === "23505") {
+      res.json({ success: false, error: "This award entry already exists for this media and year" });
+    } else {
+      res.json({ success: false, error: "Server error" });
+    }
+  }
+});
+
+// Add season to media (series)
+router.post("/admin/season/add", async (req, res) => {
+  const { media_id, number, title, description, thumbnail, release_date } = req.body;
+
+  try {
+    if (!media_id || !number) {
+      return res.json({ success: false, error: "Media ID and season number are required" });
+    }
+
+    // Check if series exists
+    const seriesCheck = await pool.query(
+      "SELECT * FROM series WHERE media_id = $1",
+      [media_id]
+    );
+
+    if (seriesCheck.rows.length === 0) {
+      return res.json({ success: false, error: "This media is not a series" });
+    }
+
+    const series = seriesCheck.rows[0];
+
+    const result = await pool.query(
+      "INSERT INTO season (series_id, number, title, description, thumbnail, release_date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [series.id, number, title || null, description || null, thumbnail || null, release_date || null]
+    );
+
+    res.json({ success: true, season: result.rows[0] });
+  } catch (err) {
+    console.error("Error adding season:", err);
+    if (err.code === "23505") {
+      res.json({ success: false, error: "This season number already exists for this series" });
+    } else {
+      res.json({ success: false, error: "Server error" });
+    }
+  }
+});
+
+// Add cast member or director to media
+router.post("/admin/media-personality/add", async (req, res) => {
+  const { media_id, person_id, role } = req.body;
+
+  try {
+    if (!media_id || !person_id || !role) {
+      return res.json({ success: false, error: "Media ID, person ID, and role are required" });
+    }
+
+    if (!["actor", "director"].includes(role)) {
+      return res.json({ success: false, error: "Role must be 'actor' or 'director'" });
+    }
+
+    const result = await pool.query(
+      "INSERT INTO media_personality (media_id, person_id, role) VALUES ($1, $2, $3) RETURNING *",
+      [media_id, person_id, role]
+    );
+
+    res.json({ success: true, mediaPersonality: result.rows[0] });
+  } catch (err) {
+    console.error("Error adding media personality:", err);
+    if (err.code === "23505") {
+      res.json({ success: false, error: "This person is already assigned this role in this media" });
+    } else {
+      res.json({ success: false, error: "Server error" });
+    }
+  }
+});
+
+// Add episode to season
+router.post("/admin/episode/add", async (req, res) => {
+  const { season_id, number, title, description, thumbnail, release_date, duration } = req.body;
+
+  try {
+    if (!season_id || !number) {
+      return res.json({ success: false, error: "Season ID and episode number are required" });
+    }
+
+    const result = await pool.query(
+      "INSERT INTO episode (season_id, number, title, description, thumbnail, release_date, duration) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+      [season_id, number, title || null, description || null, thumbnail || null, release_date || null, duration || null]
+    );
+
+    res.json({ success: true, episode: result.rows[0] });
+  } catch (err) {
+    console.error("Error adding episode:", err);
+    if (err.code === "23505") {
+      res.json({ success: false, error: "This episode number already exists for this season" });
+    } else {
+      res.json({ success: false, error: "Server error" });
+    }
+  }
+});
 
 module.exports = router;

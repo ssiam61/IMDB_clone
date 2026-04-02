@@ -9,6 +9,23 @@ export const getUser = () => {
   return user ? JSON.parse(user) : null;
 };
 
+export const getIsAdmin = () => {
+  const isAdmin = localStorage.getItem("isAdmin");
+  return isAdmin ? JSON.parse(isAdmin) : false;
+};
+
+export const getInAdminMode = () => {
+  const inAdminMode = localStorage.getItem("inAdminMode");
+  return inAdminMode ? JSON.parse(inAdminMode) : false;
+};
+
+export const toggleAdminMode = () => {
+  if (!getIsAdmin()) return false;
+  const currentMode = getInAdminMode();
+  localStorage.setItem("inAdminMode", JSON.stringify(!currentMode));
+  return !currentMode;
+};
+
 export const isAuthenticated = () => {
   return getToken() !== null && getUser() !== null;
 };
@@ -54,6 +71,7 @@ export const login = async (username, password) => {
     }
     localStorage.setItem("authToken", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
+    localStorage.setItem("isAdmin", JSON.stringify(data.isAdmin || false));
 
     return data;
   } catch (err) {
@@ -89,5 +107,7 @@ export const signup = async (username, name, email, password) => {
 export const logout = () => {
   localStorage.removeItem("authToken");
   localStorage.removeItem("user");
+  localStorage.removeItem("isAdmin");
+  localStorage.removeItem("inAdminMode");
   window.location.href = "/";
 };
