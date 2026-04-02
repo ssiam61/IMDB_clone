@@ -4,15 +4,12 @@ import api from '../services/api';
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
-  const [watchlist, setWatchlist] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('watchlist');
   const navigate = useNavigate();
 
   useEffect(() => {
-    const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('authToken');
 
     if (!token) {
@@ -20,24 +17,35 @@ export default function ProfilePage() {
       return;
     }
 
-    fetchUserData(userId);
+    fetchUserData();
   }, [navigate]);
 
-  const fetchUserData = async (userId) => {
+  const fetchUserData = async () => {
     try {
       setLoading(true);
-      const [userRes, watchlistRes, reviewsRes] = await Promise.all([
-        api.get(`/user/${userId}`),
-        api.get(`/watchlist/${userId}`),
-        api.get(`/review/user/${userId}`),
-      ]);
+      
+      // Fetch user profile
+      const userRes = await api.get('/users/profile');
+      const userData = userRes.data;
+      setUser(userData);
 
-      setUser(userRes.data);
-      setWatchlist(watchlistRes.data);
-      setReviews(reviewsRes.data);
+      // Fetch user reviews using user id
+      if (userData.id) {
+        try {
+          const reviewsRes = await api.get(`/users/${userData.id}/reviews`);
+          setReviews(reviewsRes.data || []);
+        } catch (reviewErr) {
+          console.warn('Failed to fetch reviews:', reviewErr);
+          setReviews([]);
+        }
+      }
     } catch (err) {
-      setError('Failed to load profile data.');
-      console.error(err);
+      if (err.response?.status === 401) {
+        navigate('/login');
+      } else {
+        setError('Failed to load profile data.');
+      }
+      console.error('Profile fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -88,9 +96,9 @@ export default function ProfilePage() {
             {/* User Info */}
             <div className="text-center sm:text-left flex-1">
               <h1 className="text-4xl font-bold text-white mb-2">
-                {user?.username}
+                {user?.username || 'User'}
               </h1>
-              <p className="text-[#A8A8B3] mb-1">{user?.email}</p>
+              <p className="text-[#A8A8B3] mb-1">{user?.email || 'No email'}</p>
               <p className="text-sm text-[#A8A8B3]">
                 Member since {user?.createdAt ? new Date(user.createdAt).getFullYear() : 'Recently'}
               </p>
@@ -100,22 +108,22 @@ export default function ProfilePage() {
           {/* Stats Row */}
           <div className="grid grid-cols-3 gap-4 mt-12">
             <div className="glass-card p-6 text-center hover-glow transition-all duration-300">
-              <div className="text-gradient-to-r from-[#E94560] to-[#533483] text-3xl font-bold mb-2">
-                {watchlist.length}
+              <div className="text-transparent bg-clip-text bg-gradient-to-r from-[#E94560] to-[#533483] text-3xl font-bold mb-2">
+                {reviews.length}
               </div>
-              <p className="text-[#A8A8B3] text-sm">In Watchlist</p>
+              <p className="text-[#A8A8B3] text-sm">Reviews Written</p>
             </div>
             <div className="glass-card p-6 text-center hover-glow transition-all duration-300">
               <div className="text-transparent bg-clip-text bg-gradient-to-r from-[#F5C518] to-[#E94560] text-3xl font-bold mb-2">
-                {reviews.length}
+                {user?.role === 'admin' ? 'Admin' : 'User'}
               </div>
-              <p className="text-[#A8A8B3] text-sm">Reviews</p>
+              <p className="text-[#A8A8B3] text-sm">Account Type</p>
             </div>
             <div className="glass-card p-6 text-center hover-glow transition-all duration-300">
               <div className="text-transparent bg-clip-text bg-gradient-to-r from-[#0F3460] to-[#533483] text-3xl font-bold mb-2">
-                {Math.floor(Math.random() * 50) + 1}
+                {user?.id ? '✓' : '—'}
               </div>
-              <p className="text-[#A8A8B3] text-sm">Following</p>
+              <p className="text-[#A8A8B3] text-sm">Active</p>
             </div>
           </div>
         </div>
@@ -123,134 +131,73 @@ export default function ProfilePage() {
 
       {error && (
         <div className="max-w-7xl mx-auto px-6 mt-6">
-          <div className="p-4 bg-red-500/15 border border-red-500/30 rounded-lg text-red-400 backdrop-blur-sm">
-            {error}
+          <div className="p-4 bg-red-500/15 border border-red-500/30 rounded-lg text-red-400 backdrop-blur-sm flex items-start gap-3">
+            <svg
+              className="w-5 h-5 flex-shrink-0 mt-0.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span>{error}</span>
           </div>
         </div>
       )}
 
-      {/* Tab Navigation */}
-      <div className="sticky top-16 z-40 bg-[#0F0F0F]/95 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-6 flex gap-8">
-          <button
-            onClick={() => setActiveTab('watchlist')}
-            className={`py-4 font-semibold text-sm transition-all duration-300 border-b-2 ${
-              activeTab === 'watchlist'
-                ? 'text-white border-gradient-to-r from-[#E94560] to-[#533483] border-[#E94560]'
-                : 'text-[#A8A8B3] border-transparent hover:text-white'
-            }`}
-          >
-            My Watchlist ({watchlist.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('reviews')}
-            className={`py-4 font-semibold text-sm transition-all duration-300 border-b-2 ${
-              activeTab === 'reviews'
-                ? 'text-white border-gradient-to-r from-[#E94560] to-[#533483] border-[#E94560]'
-                : 'text-[#A8A8B3] border-transparent hover:text-white'
-            }`}
-          >
-            My Reviews ({reviews.length})
-          </button>
-        </div>
-      </div>
-
-      {/* Tab Content */}
+      {/* Reviews Section */}
       <div className="max-w-7xl mx-auto px-6 py-12">
-        {activeTab === 'watchlist' && (
-          <div className="animate-in fade-in">
-            {watchlist.length === 0 ? (
-              <div className="text-center py-20">
-                <h3 className="text-2xl font-bold text-white mb-3">Your watchlist is empty</h3>
-                <p className="text-[#A8A8B3] mb-6">
-                  Start adding movies to keep track of what you want to watch
-                </p>
-                <button
-                  onClick={() => navigate('/')}
-                  className="px-6 py-3 bg-gradient-to-r from-[#E94560] to-[#533483] text-white font-bold rounded-full hover:shadow-[0_0_30px_rgba(233,69,96,0.4)] transition-all duration-300"
-                >
-                  Explore Movies
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {watchlist.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="glass-card overflow-hidden hover-glow hover-lift transition-all duration-300 animate-in fade-in"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="relative h-56 bg-gradient-to-br from-[#16213E] to-[#0F3460] overflow-hidden group">
-                      {item.posterUrl && (
-                        <img
-                          src={item.posterUrl}
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    </div>
-                    <div className="p-4">
-                      <h3 className="text-white font-bold line-clamp-2 mb-2 group-hover:text-[#E94560] transition-colors">
-                        {item.title}
-                      </h3>
-                      <p className="text-[#F5C518] font-bold">⭐ {item.imdbRating?.toFixed(1) || 'N/A'}</p>
+        <h2 className="text-3xl font-bold text-white mb-8">My Reviews</h2>
+
+        {reviews.length === 0 ? (
+          <div className="text-center py-20">
+            <h3 className="text-2xl font-bold text-white mb-3">No reviews yet</h3>
+            <p className="text-[#A8A8B3] mb-6">
+              Share your thoughts about the movies you've watched
+            </p>
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-3 bg-gradient-to-r from-[#E94560] to-[#533483] text-white font-bold rounded-full hover:shadow-[0_0_30px_rgba(233,69,96,0.4)] transform hover:-translate-y-0.5 transition-all duration-300"
+            >
+              Explore Movies
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {reviews.map((review, index) => (
+              <div
+                key={review.id}
+                className="glass-card p-6 hover-glow transition-all duration-300 animate-in fade-in"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-white hover:text-[#E94560] transition-colors">
+                      {review.movieTitle || 'Movie'}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[#F5C518] font-bold text-lg">
+                        ⭐ {review.rating || 0}/10
+                      </span>
+                      <span className="badge">{Math.floor(Math.random() * 100) + 1} helpful</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'reviews' && (
-          <div className="animate-in fade-in">
-            {reviews.length === 0 ? (
-              <div className="text-center py-20">
-                <h3 className="text-2xl font-bold text-white mb-3">No reviews yet</h3>
-                <p className="text-[#A8A8B3] mb-6">
-                  Share your thoughts about the movies you've watched
-                </p>
-                <button
-                  onClick={() => navigate('/')}
-                  className="px-6 py-3 bg-gradient-to-r from-[#E94560] to-[#533483] text-white font-bold rounded-full hover:shadow-[0_0_30px_rgba(233,69,96,0.4)] transition-all duration-300"
-                >
-                  Explore Movies
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {reviews.map((review, index) => (
-                  <div
-                    key={review.id}
-                    className="glass-card p-6 hover-glow transition-all duration-300 animate-in fade-in"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-xl font-bold text-white group-hover:text-[#E94560] transition-colors">
-                          {review.movieTitle}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-[#F5C518] font-bold text-lg">
-                            ⭐ {review.rating}/10
-                          </span>
-                          <span className="badge">{Math.floor(Math.random() * 100) + 1} helpful</span>
-                        </div>
-                      </div>
-                      <p className="text-[#A8A8B3] text-sm">
-                        {new Date(review.createdAt).toLocaleDateString('en-US', {
+                  <p className="text-[#A8A8B3] text-sm whitespace-nowrap ml-4">
+                    {review.createdAt
+                      ? new Date(review.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric',
-                        })}
-                      </p>
-                    </div>
-                    <p className="text-[#EAEAEA] leading-relaxed">{review.comment}</p>
-                  </div>
-                ))}
+                        })
+                      : 'Recently'}
+                  </p>
+                </div>
+                <p className="text-[#EAEAEA] leading-relaxed">{review.comment || review.text || 'No comment'}</p>
               </div>
-            )}
+            ))}
           </div>
         )}
       </div>
