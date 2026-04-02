@@ -173,7 +173,6 @@ const SeasonPage = () => {
 
       <div style={pageStyles.container}>
         <div style={pageStyles.innerContainer}>
-          {/* Header Section */}
           <div style={pageStyles.header}>
             <img
               src={season.thumbnail || "/images/placeholder.png"}
@@ -182,7 +181,6 @@ const SeasonPage = () => {
             />
             <h2 style={pageStyles.title}>Season {season.number}</h2>
 
-            {/* Navigation Buttons */}
             <div style={pageStyles.navigationButtons}>
               {thisIndex > 0 && (
                 <button
@@ -224,7 +222,6 @@ const SeasonPage = () => {
             </div>
           </div>
 
-          {/* Info Section */}
           <div style={pageStyles.infoCard}>
             <div style={pageStyles.infoRow}>
               <div style={pageStyles.infoField}>
@@ -245,7 +242,6 @@ const SeasonPage = () => {
             )}
           </div>
 
-          {/* Episodes Section */}
           {episodes.length > 0 && (
             <>
               <h3 style={pageStyles.sectionTitle}>Episodes</h3>
@@ -257,7 +253,6 @@ const SeasonPage = () => {
             </>
           )}
 
-          {/* Review Section */}
           <h3 style={pageStyles.sectionTitle}>Leave a Review</h3>
 
           {!reviewSubmitted ? (
@@ -361,7 +356,6 @@ const SeasonPage = () => {
             </div>
           )}
 
-          {/* Reviews Section */}
           <h3 style={pageStyles.sectionTitle}>Reviews</h3>
           <p style={{ color: "#a0aec0", textAlign: "center", padding: "20px" }}>
             No reviews yet — coming soon.

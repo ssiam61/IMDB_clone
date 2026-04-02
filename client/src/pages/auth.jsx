@@ -1,51 +1,71 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { login, signup, isAuthenticated } from "../utils/auth";
 
 const Auth = () => {
   const [mode, setMode] = useState("login");
   const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState("user");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const token = localStorage.getItem("authToken");
+      window.location.href = "/user-dashboard";
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    if (mode === "signup" && password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    const endpoint =
-      mode === "login"
-        ? "http://localhost:5000/api/auth/login"
-        : "http://localhost:5000/api/auth/signup";
+    setLoading(true);
 
     try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role }),
-      });
+      if (mode === "login") {
+        if (!username || !password) {
+          setError("Username and password are required");
+          setLoading(false);
+          return;
+        }
 
-      const data = await response.json();
+        const data = await login(username, password);
 
-      if (!data.success) {
-        setError(data.error || "Something went wrong");
-        return;
-      }
-
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      if (data.isAdmin) {
-        window.location.href = "/admin-dashboard";
+        if (data.isAdmin) {
+          window.location.href = "/admin-dashboard";
+        } else {
+          window.location.href = "/user-dashboard";
+        }
       } else {
+        if (!username || !name || !email || !password || !confirmPassword) {
+          setError("All fields are required");
+          setLoading(false);
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          setError("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+
+        if (password.length < 6) {
+          setError("Password must be at least 6 characters");
+          setLoading(false);
+          return;
+        }
+
+        const data = await signup(username, name, email, password);
         window.location.href = "/user-dashboard";
       }
     } catch (err) {
       console.error(err);
-      setError("Server error");
+      setError(err.message || "Authentication failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -77,7 +97,7 @@ const Auth = () => {
             boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
           }}
         >
-          {/* Header */}
+
           <div style={{ textAlign: "center", marginBottom: "32px" }}>
             <h1
               style={{
@@ -102,7 +122,6 @@ const Auth = () => {
             </p>
           </div>
 
-          {/* Mode Toggle */}
           <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
             <button
               onClick={() => {
@@ -167,7 +186,6 @@ const Auth = () => {
             </button>
           </div>
 
-          {/* Error Message */}
           {error && (
             <p
               style={{
@@ -185,9 +203,7 @@ const Auth = () => {
             </p>
           )}
 
-          {/* Form */}
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {/* Username */}
             <div>
               <label style={{ display: "block", color: "#ffffff", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>
                 Username
@@ -197,6 +213,7 @@ const Auth = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Choose your username"
+                disabled={loading}
                 required
                 style={{
                   width: "100%",
@@ -209,10 +226,14 @@ const Auth = () => {
                   boxSizing: "border-box",
                   transition: "all 0.3s ease",
                   outline: "none",
+                  opacity: loading ? 0.6 : 1,
+                  cursor: loading ? "not-allowed" : "text",
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = "#ff5a7e";
-                  e.target.style.boxShadow = "0 0 12px rgba(255, 90, 126, 0.3)";
+                  if (!loading) {
+                    e.target.style.borderColor = "#ff5a7e";
+                    e.target.style.boxShadow = "0 0 12px rgba(255, 90, 126, 0.3)";
+                  }
                 }}
                 onBlur={(e) => {
                   e.target.style.borderColor = "rgba(255, 90, 126, 0.3)";
@@ -221,7 +242,86 @@ const Auth = () => {
               />
             </div>
 
-            {/* Password */}
+            {mode === "signup" && (
+              <div>
+                <label style={{ display: "block", color: "#ffffff", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your full name"
+                  disabled={loading}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    background: "#254061",
+                    border: "1px solid rgba(255, 90, 126, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                    transition: "all 0.3s ease",
+                    outline: "none",
+                    opacity: loading ? 0.6 : 1,
+                    cursor: loading ? "not-allowed" : "text",
+                  }}
+                  onFocus={(e) => {
+                    if (!loading) {
+                      e.target.style.borderColor = "#ff5a7e";
+                      e.target.style.boxShadow = "0 0 12px rgba(255, 90, 126, 0.3)";
+                    }
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "rgba(255, 90, 126, 0.3)";
+                    e.target.style.boxShadow = "none";
+                  }}
+                />
+              </div>
+            )}
+
+            {mode === "signup" && (
+              <div>
+                <label style={{ display: "block", color: "#ffffff", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  disabled={loading}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    background: "#254061",
+                    border: "1px solid rgba(255, 90, 126, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                    transition: "all 0.3s ease",
+                    outline: "none",
+                    opacity: loading ? 0.6 : 1,
+                    cursor: loading ? "not-allowed" : "text",
+                  }}
+                  onFocus={(e) => {
+                    if (!loading) {
+                      e.target.style.borderColor = "#ff5a7e";
+                      e.target.style.boxShadow = "0 0 12px rgba(255, 90, 126, 0.3)";
+                    }
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "rgba(255, 90, 126, 0.3)";
+                    e.target.style.boxShadow = "none";
+                  }}
+                />
+              </div>
+            )}
+
             <div>
               <label style={{ display: "block", color: "#ffffff", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>
                 Password
@@ -231,6 +331,7 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
+                disabled={loading}
                 required
                 style={{
                   width: "100%",
@@ -243,10 +344,14 @@ const Auth = () => {
                   boxSizing: "border-box",
                   transition: "all 0.3s ease",
                   outline: "none",
+                  opacity: loading ? 0.6 : 1,
+                  cursor: loading ? "not-allowed" : "text",
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = "#a855f7";
-                  e.target.style.boxShadow = "0 0 12px rgba(168, 85, 247, 0.3)";
+                  if (!loading) {
+                    e.target.style.borderColor = "#a855f7";
+                    e.target.style.boxShadow = "0 0 12px rgba(168, 85, 247, 0.3)";
+                  }
                 }}
                 onBlur={(e) => {
                   e.target.style.borderColor = "rgba(168, 85, 247, 0.3)";
@@ -255,7 +360,6 @@ const Auth = () => {
               />
             </div>
 
-            {/* Confirm Password (only for signup) */}
             {mode === "signup" && (
               <div>
                 <label style={{ display: "block", color: "#ffffff", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>
@@ -266,6 +370,7 @@ const Auth = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm your password"
+                  disabled={loading}
                   required
                   style={{
                     width: "100%",
@@ -278,10 +383,14 @@ const Auth = () => {
                     boxSizing: "border-box",
                     transition: "all 0.3s ease",
                     outline: "none",
+                    opacity: loading ? 0.6 : 1,
+                    cursor: loading ? "not-allowed" : "text",
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = "#a855f7";
-                    e.target.style.boxShadow = "0 0 12px rgba(168, 85, 247, 0.3)";
+                    if (!loading) {
+                      e.target.style.borderColor = "#a855f7";
+                      e.target.style.boxShadow = "0 0 12px rgba(168, 85, 247, 0.3)";
+                    }
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = "rgba(168, 85, 247, 0.3)";
@@ -291,40 +400,9 @@ const Auth = () => {
               </div>
             )}
 
-            {/* Role */}
-            <div>
-              <label style={{ display: "block", color: "#ffffff", fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>
-                Role
-              </label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  background: "#254061",
-                  border: "1px solid rgba(255, 90, 126, 0.3)",
-                  borderRadius: "8px",
-                  color: "#ffffff",
-                  fontSize: "14px",
-                  boxSizing: "border-box",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  outline: "none",
-                }}
-              >
-                <option value="user" style={{ background: "#1a2749", color: "#ffffff" }}>
-                  Normal User
-                </option>
-                <option value="admin" style={{ background: "#1a2749", color: "#ffffff" }}>
-                  Admin
-                </option>
-              </select>
-            </div>
-
-            {/* Submit Button */}
             <button
               type="submit"
+              disabled={loading}
               style={{
                 padding: "14px",
                 marginTop: "16px",
@@ -334,24 +412,26 @@ const Auth = () => {
                 color: "#ffffff",
                 fontWeight: "700",
                 fontSize: "16px",
-                cursor: "pointer",
+                cursor: loading ? "not-allowed" : "pointer",
                 transition: "all 0.3s ease",
                 boxShadow: "0 4px 15px rgba(255, 90, 126, 0.4)",
+                opacity: loading ? 0.7 : 1,
               }}
               onMouseEnter={(e) => {
-                e.target.style.transform = "translateY(-2px)";
-                e.target.style.boxShadow = "0 6px 20px rgba(255, 90, 126, 0.6)";
+                if (!loading) {
+                  e.target.style.transform = "translateY(-2px)";
+                  e.target.style.boxShadow = "0 6px 20px rgba(255, 90, 126, 0.6)";
+                }
               }}
               onMouseLeave={(e) => {
                 e.target.style.transform = "translateY(0)";
                 e.target.style.boxShadow = "0 4px 15px rgba(255, 90, 126, 0.4)";
               }}
             >
-              {mode === "login" ? "Login" : "Create Account"}
+              {loading ? "Processing..." : (mode === "login" ? "Login" : "Create Account")}
             </button>
           </form>
 
-          {/* Footer */}
           <p
             style={{
               textAlign: "center",

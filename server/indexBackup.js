@@ -2,12 +2,7 @@ const express = require("express");
 const app = express();
 const pool = require("./db");
 
-//middleware
 app.use(express.json());
-
-//ROUTES
-
-//users
 app.get("/users", async (req, res) => {
   const result = await pool.query("SELECT * FROM users");
   res.json(result.rows);
@@ -41,7 +36,6 @@ app.delete("/users/:id", async (req, res) => {
   res.sendStatus(204);
 });
 
-//genre
 app.get("/genre", async (req, res) => {
   res.json((await pool.query("SELECT * FROM genre")).rows);
 });
@@ -73,7 +67,6 @@ app.delete("/genre/:id", async (req, res) => {
 });
 
 
-//person
 app.get("/person", async (req, res) => {
   res.json((await pool.query("SELECT * FROM person")).rows);
 });
@@ -106,8 +99,6 @@ app.delete("/person/:id", async (req, res) => {
   res.sendStatus(204);
 });
 
-
-//media 
 app.get("/media", async (req, res) => {
   res.json((await pool.query("SELECT * FROM media")).rows);
 });
@@ -140,7 +131,6 @@ app.delete("/media/:id", async (req, res) => {
   res.sendStatus(204);
 });
 
-//movie
 app.get("/movies", async (req, res) => {
   const result = await pool.query("SELECT * FROM movie");
   res.json(result.rows);
@@ -174,7 +164,6 @@ app.delete("/movies/:id", async (req, res) => {
   res.sendStatus(204);
 });
 
-//series
 app.get("/series", async (req, res) => {
   const result = await pool.query("SELECT * FROM series");
   res.json(result.rows);
@@ -208,7 +197,6 @@ app.delete("/series/:id", async (req, res) => {
   res.sendStatus(204);
 });
 
-//season
 app.get("/season", async (req, res) => {
   res.json((await pool.query("SELECT * FROM season")).rows);
 });
@@ -241,8 +229,6 @@ app.delete("/season/:id", async (req, res) => {
   res.sendStatus(204);
 });
 
-
-// episode
 app.get("/episode", async (req, res) => {
   res.json((await pool.query("SELECT * FROM episode")).rows);
 });
@@ -275,8 +261,6 @@ app.delete("/episode/:id", async (req, res) => {
   res.sendStatus(204);
 });
 
-
-//post or review
 app.get("/review", async (req, res) => {
   res.json((await pool.query("SELECT * FROM review")).rows);
 });
@@ -309,8 +293,6 @@ app.delete("/review/:id", async (req, res) => {
   res.sendStatus(204);
 });
 
-
-//reply
 app.get("/reply", async (req, res) => {
   res.json((await pool.query("SELECT * FROM reply")).rows);
 });
@@ -343,7 +325,6 @@ app.delete("/reply/:id", async (req, res) => {
   res.sendStatus(204);
 });
 
-//watchlist
 app.get("/watchlist", async (req, res) => {
   res.json((await pool.query("SELECT * FROM watchlist")).rows);
 });

@@ -12,6 +12,8 @@
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "pg": "^8.17.2"
+    "pg": "^8.17.2",
+    "jsonwebtoken": "^9.1.2"
   }
 }
+

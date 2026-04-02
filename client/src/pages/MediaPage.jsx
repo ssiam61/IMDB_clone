@@ -147,11 +147,9 @@ const MediaPage = () => {
     },
   };
 
-  // Helper function to extract YouTube video ID from various URL formats
   const extractYoutubeId = (url) => {
     if (!url) return null;
     
-    // Try various YouTube URL formats
     const patterns = [
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
       /^([a-zA-Z0-9_-]{11})$/, // Direct video ID
@@ -204,7 +202,6 @@ const MediaPage = () => {
 
       <div style={pageStyles.container}>
         <div style={pageStyles.innerContainer}>
-          {/* Header Section */}
           <div style={pageStyles.header}>
             <img
               src={media.thumbnail || "/images/placeholder.png"}
@@ -214,7 +211,6 @@ const MediaPage = () => {
             <h2 style={pageStyles.title}>{media.name}</h2>
           </div>
 
-          {/* YouTube Player Section */}
           {media.teaser_link && extractYoutubeId(media.teaser_link) ? (
             <div>
               <h3 style={pageStyles.sectionTitle}>Trailer</h3>
@@ -230,7 +226,6 @@ const MediaPage = () => {
             </div>
           ) : null}
 
-          {/* Info Section */}
           <div style={pageStyles.infoCard}>
             <div style={pageStyles.infoRow}>
               <div style={pageStyles.infoField}>
@@ -255,7 +250,6 @@ const MediaPage = () => {
             )}
           </div>
 
-          {/* Directors Section */}
           {directors.length > 0 && (
             <>
               <h3 style={pageStyles.sectionTitle}>
@@ -275,7 +269,6 @@ const MediaPage = () => {
             </>
           )}
 
-          {/* Cast Section */}
           {cast.length > 0 && (
             <>
               <h3 style={pageStyles.sectionTitle}>Cast</h3>
@@ -293,7 +286,6 @@ const MediaPage = () => {
             </>
           )}
 
-          {/* Awards Section */}
           {awards.length > 0 && (
             <>
               <h3 style={pageStyles.sectionTitle}>Awards</h3>
@@ -305,7 +297,6 @@ const MediaPage = () => {
             </>
           )}
 
-          {/* Seasons Section */}
           {seasons.length > 0 && (
             <>
               <h3 style={pageStyles.sectionTitle}>Seasons</h3>
@@ -317,7 +308,6 @@ const MediaPage = () => {
             </>
           )}
 
-          {/* Review Section */}
           <h3 style={pageStyles.sectionTitle}>Leave a Review</h3>
 
           {!reviewSubmitted ? (
@@ -421,7 +411,6 @@ const MediaPage = () => {
             </div>
           )}
 
-          {/* Reviews Section */}
           <h3 style={pageStyles.sectionTitle}>Reviews</h3>
           <p style={{ color: "#a0aec0", textAlign: "center", padding: "20px" }}>
             No reviews yet — coming soon.

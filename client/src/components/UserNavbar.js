@@ -1,5 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
+import { logout } from "../utils/auth";
 
 const UserNavbar = () => {
   const getNavLinkStyle = ({ isActive }) => ({
@@ -25,7 +26,6 @@ const UserNavbar = () => {
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: "1400px", margin: "0 auto" }}>
-        {/* Brand */}
         <NavLink
           to="/user-dashboard"
           style={{
@@ -41,8 +41,7 @@ const UserNavbar = () => {
           IMDb Clone
         </NavLink>
 
-        {/* Nav Links */}
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <NavLink
             to="/user-dashboard"
             style={getNavLinkStyle}
@@ -70,6 +69,31 @@ const UserNavbar = () => {
           >
             Notifications
           </NavLink>
+
+          <button
+            onClick={logout}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "6px",
+              border: "1px solid rgba(255, 90, 126, 0.3)",
+              background: "rgba(255, 90, 126, 0.1)",
+              color: "#ff5a7e",
+              cursor: "pointer",
+              fontWeight: "600",
+              transition: "all 0.3s ease",
+              marginLeft: "8px",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "rgba(255, 90, 126, 0.2)";
+              e.target.style.borderColor = "#ff5a7e";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "rgba(255, 90, 126, 0.1)";
+              e.target.style.borderColor = "rgba(255, 90, 126, 0.3)";
+            }}
+          >
+            Logout
+          </button>
         </div>
       </div>
     </nav>

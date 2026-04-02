@@ -139,7 +139,6 @@ const PersonPage = () => {
 
       <div style={pageStyles.container}>
         <div style={pageStyles.innerContainer}>
-          {/* Header Section */}
           <div style={pageStyles.header}>
             <img
               src={person.profile_image || "/images/placeholder.png"}
@@ -151,7 +150,6 @@ const PersonPage = () => {
             <p style={pageStyles.occupation}>{person.occupation}</p>
           </div>
 
-          {/* Biography Section */}
           {person.biography && (
             <div style={pageStyles.bioCard}>
               <h4 style={pageStyles.bioLabel}>Biography</h4>
@@ -159,7 +157,6 @@ const PersonPage = () => {
             </div>
           )}
 
-          {/* Media Appearances Section */}
           {mediaList.length > 0 && (
             <>
               <h3 style={pageStyles.sectionTitle}>Appears In</h3>
@@ -176,7 +173,6 @@ const PersonPage = () => {
             </>
           )}
 
-          {/* Empty State */}
           {mediaList.length === 0 && (
             <div style={pageStyles.emptyState}>
               <p style={pageStyles.emptyStateText}>

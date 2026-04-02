@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
 import CategoryRow from "../components/CategoryRow";
+import { authenticatedFetch, getUser } from "../utils/auth";
 
 const UserDashboard = () => {
   const [allMedia, setAllMedia] = useState([]);
@@ -17,10 +18,14 @@ const UserDashboard = () => {
   useEffect(() => {
     const fetchHome = async () => {
       try {
-        const storedUser = JSON.parse(localStorage.getItem("user"));
-        const userId = storedUser?.id;
+        const user = getUser();
+        const userId = user?.id;
 
-        const res = await fetch(`http://localhost:5000/api/home/${userId}`);
+        if (!userId) {
+          throw new Error("User data not found");
+        }
+
+        const res = await authenticatedFetch(`http://localhost:5000/api/home/${userId}`);
         const data = await res.json();
 
         if (data.success) {
@@ -43,7 +48,6 @@ const UserDashboard = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // Add search functionality here
     console.log("Search:", searchQuery);
   };
 
@@ -51,7 +55,6 @@ const UserDashboard = () => {
     <>
       <UserNavbar />
 
-      {/* HERO SECTION */}
       <div
         style={{
           background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f2847 100%)",
@@ -84,7 +87,6 @@ const UserDashboard = () => {
             </p>
           </div>
 
-          {/* SEARCH BAR */}
           <form
             onSubmit={handleSearch}
             style={{
@@ -173,7 +175,6 @@ const UserDashboard = () => {
         </div>
       </div>
 
-      {/* MAIN CONTENT */}
       <div
         style={{
           background: "linear-gradient(180deg, #0a0e27 0%, #0f1628 100%)",
@@ -182,7 +183,6 @@ const UserDashboard = () => {
         }}
       >
         <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-          {/* FEATURED SECTION */}
           <div style={{ marginBottom: "80px" }}>
             <div
               style={{
@@ -250,7 +250,6 @@ const UserDashboard = () => {
             </div>
           </div>
 
-          {/* CATEGORY ROWS */}
           {highlyRated.length > 0 && (
             <div style={{ marginBottom: "60px" }}>
               <CategoryRow title="⭐ Highly Rated" list={highlyRated} />
@@ -293,7 +292,6 @@ const UserDashboard = () => {
             </div>
           )}
 
-          {/* CTA SECTION */}
           <div
             style={{
               background: "linear-gradient(135deg, rgba(26, 39, 73, 0.8) 0%, rgba(15, 40, 71, 0.8) 100%)",

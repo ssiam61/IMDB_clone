@@ -161,7 +161,6 @@ const EpisodePage = () => {
 
       <div style={pageStyles.container}>
         <div style={pageStyles.innerContainer}>
-          {/* Header Section */}
           <div style={pageStyles.header}>
             <img
               src={episode.thumbnail || "/images/placeholder.png"}
@@ -170,7 +169,6 @@ const EpisodePage = () => {
             />
             <h2 style={pageStyles.title}>Episode {episode.number}</h2>
 
-            {/* Navigation Buttons */}
             <div style={pageStyles.navigationButtons}>
               {thisIndex > 0 && (
                 <button
@@ -212,7 +210,6 @@ const EpisodePage = () => {
             </div>
           </div>
 
-          {/* Info Section */}
           <div style={pageStyles.infoCard}>
             <div style={pageStyles.infoRow}>
               <div style={pageStyles.infoField}>
@@ -233,7 +230,6 @@ const EpisodePage = () => {
             )}
           </div>
 
-          {/* Review Section */}
           <h3 style={pageStyles.sectionTitle}>Leave a Review</h3>
 
           {!reviewSubmitted ? (
@@ -337,7 +333,6 @@ const EpisodePage = () => {
             </div>
           )}
 
-          {/* Reviews Section */}
           <h3 style={pageStyles.sectionTitle}>Reviews</h3>
           <p style={{ color: "#a0aec0", textAlign: "center", padding: "20px" }}>
             No reviews yet — coming soon.
