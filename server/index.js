@@ -17,7 +17,7 @@ app.use("/report", require("./routes/report"));
 app.use("/genre", require("./routes/genre"));
 app.use("/preference", require("./routes/preference"));
 app.use("/person", require("./routes/person"));
-app.use("/fan", require("./routes/fan"));
+
 app.use("/award", require("./routes/award"));
 app.use("/person_award", require("./routes/person_award"));
 

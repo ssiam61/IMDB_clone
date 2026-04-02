@@ -2,69 +2,75 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 
 const UserNavbar = () => {
+  const getNavLinkStyle = ({ isActive }) => ({
+    color: isActive ? "#ff5a7e" : "#b0b8d4",
+    padding: "8px 16px",
+    borderRadius: "6px",
+    background: isActive ? "rgba(255, 90, 126, 0.1)" : "transparent",
+    transition: "all 0.3s ease",
+    textDecoration: "none",
+    fontWeight: isActive ? "700" : "400",
+  });
+
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-3">
-      <NavLink className="navbar-brand" to="/user-dashboard">
-        IMDB Clone
-      </NavLink>
+    <nav
+      style={{
+        background: "linear-gradient(90deg, rgba(10, 14, 39, 0.95) 0%, rgba(26, 31, 58, 0.95) 100%)",
+        backdropFilter: "blur(10px)",
+        borderBottom: "1px solid rgba(255, 90, 126, 0.1)",
+        padding: "16px 24px",
+        position: "sticky",
+        top: "0",
+        zIndex: "1000",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: "1400px", margin: "0 auto" }}>
+        {/* Brand */}
+        <NavLink
+          to="/user-dashboard"
+          style={{
+            fontSize: "24px",
+            fontWeight: "800",
+            background: "linear-gradient(135deg, #ff5a7e, #a855f7)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            letterSpacing: "-0.5px",
+            textDecoration: "none",
+          }}
+        >
+          IMDb Clone
+        </NavLink>
 
-      <button
-        className="navbar-toggler"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#userNav"
-      >
-        <span className="navbar-toggler-icon"></span>
-      </button>
+        {/* Nav Links */}
+        <div style={{ display: "flex", gap: "8px" }}>
+          <NavLink
+            to="/user-dashboard"
+            style={getNavLinkStyle}
+          >
+            Home
+          </NavLink>
 
-      <div className="collapse navbar-collapse" id="userNav">
-        <ul className="navbar-nav ms-auto">
+          <NavLink
+            to="/posts"
+            style={getNavLinkStyle}
+          >
+            Posts
+          </NavLink>
 
-          <li className="nav-item">
-            <NavLink 
-              to="/user-dashboard" 
-              className={({ isActive }) =>
-                "nav-link " + (isActive ? "active fw-bold" : "")
-              }
-            >
-              Home
-            </NavLink>
-          </li>
+          <NavLink
+            to="/profile"
+            style={getNavLinkStyle}
+          >
+            Profile
+          </NavLink>
 
-          <li className="nav-item">
-            <NavLink 
-              to="/posts" 
-              className={({ isActive }) =>
-                "nav-link " + (isActive ? "active fw-bold" : "")
-              }
-            >
-              Posts
-            </NavLink>
-          </li>
-
-          <li className="nav-item">
-            <NavLink 
-              to="/profile" 
-              className={({ isActive }) =>
-                "nav-link " + (isActive ? "active fw-bold" : "")
-              }
-            >
-              Profile
-            </NavLink>
-          </li>
-
-          <li className="nav-item">
-            <NavLink 
-              to="/notifications" 
-              className={({ isActive }) =>
-                "nav-link " + (isActive ? "active fw-bold" : "")
-              }
-            >
-              Notifications
-            </NavLink>
-          </li>
-
-        </ul>
+          <NavLink
+            to="/notifications"
+            style={getNavLinkStyle}
+          >
+            Notifications
+          </NavLink>
+        </div>
       </div>
     </nav>
   );

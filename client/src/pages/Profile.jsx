@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
+import CategoryRow from "../components/CategoryRow";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [watchlist, setWatchlist] = useState([]);
+  const [favoriteActors, setFavoriteActors] = useState([]);
   const [activeTab, setActiveTab] = useState("posts");
 
   const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -20,6 +22,10 @@ const Profile = () => {
           setUser(data.user);
           setWatchlist(data.watchlist);
         }
+
+        const actorsRes = await fetch(`http://localhost:5000/api/fan/user/${userId}`);
+        const actorsData = await actorsRes.json();
+        setFavoriteActors(actorsData);
       } catch (err) {
         console.error("Error loading profile:", err);
       }
@@ -91,6 +97,10 @@ const Profile = () => {
             <p className="text-muted">No items in watchlist</p>
           )}
         </div>
+
+        <hr />
+
+        <CategoryRow title="Your Favorite Actors" list={favoriteActors} />
 
         <hr />
 

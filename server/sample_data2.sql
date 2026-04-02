@@ -96,22 +96,22 @@ INSERT INTO media
 (id, name, media_type, teaser_link, thumbnail, description, imdb_rating, user_rating, duration, release_date)
 VALUES
   (1,'Inception','movie',
-    'https://www.youtube.com/watch?v=djV11Xbc914&list=RDN2ANAqO1TLs&index=5',
+    'https://www.youtube.com/watch?v=djV11Xbc914&list=RDN2ANAqO1TLs&index=5ha',
     'https://i.redd.it/mdvmefeejg331.jpg',
     'A thief steals secrets through dreams.',8.8,9.1,148,'2010-07-16'),
 
   (2,'The Mandalorian','series',
-    'https://www.youtube.com/watch?v=djV11Xbc914&list=RDN2ANAqO1TLs&index=5',
+    'https://www.youtube.com/watch?v=djV11Xbc914&list=RDN2ANAqO1TLs&index=5ha',
     'https://i.redd.it/mdvmefeejg331.jpg',
     'A lone bounty hunter travels the galaxy.',8.7,8.9,40,'2019-11-12'),
 
   (3,'La La Land','movie',
-    'https://www.youtube.com/watch?v=djV11Xbc914&list=RDN2ANAqO1TLs&index=5',
+    'https://www.youtube.com/watch?v=djV11Xbc914&list=RDN2ANAqO1TLs&index=5ha',
     'https://i.redd.it/mdvmefeejg331.jpg',
     'A jazz pianist and an aspiring actress fall in love.',8.0,8.5,128,'2016-12-09'),
 
   (4,'The Witcher','series',
-    'https://www.youtube.com/watch?v=djV11Xbc914&list=RDN2ANAqO1TLs&index=5',
+    'https://www.youtube.com/watch?v=djV11Xbc914&list=RDN2ANAqO1TLs&index=5ha',
     'https://i.redd.it/mdvmefeejg331.jpg',
     'A monster hunter struggles with destiny.',8.3,8.4,60,'2019-12-20');
 
@@ -235,3 +235,6 @@ SELECT setval('season_id_seq',  (SELECT MAX(id) FROM season), true);
 SELECT setval('episode_id_seq', (SELECT MAX(id) FROM episode), true);
 
 COMMIT;
+
+--https://i.redd.it/mdvmefeejg331.jpg
+--https://www.youtube.com/watch?v=djV11Xbc914&list=RDN2ANAqO1TLs&index=5

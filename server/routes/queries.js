@@ -401,5 +401,30 @@ router.get("/person/full/:id", async (req, res) => {
   }
 });
 
+router.get("/fan/user/:userId", async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT 
+        person.id,
+        person.name,
+        person.profile_image,
+        person.occupation
+      FROM fan
+      JOIN person ON person.id = fan.person_id
+      WHERE fan.user_id = $1
+      `,
+      [userId]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching favorite actors:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 
 module.exports = router;

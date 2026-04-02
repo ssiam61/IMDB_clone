@@ -1,7 +1,7 @@
 import React from "react";
 import MediaCard from "./MediaCard";
 
-const CategoryRow = ({ title, list }) => {
+const CategoryRow = ({ title, list, type = "media" }) => {
   if (!list || list.length === 0) return null;
 
   return (
@@ -20,9 +20,11 @@ const CategoryRow = ({ title, list }) => {
       >
         {list.map((item) => (
           <MediaCard
+            key={item.id}
             id={item.id}
             title={item.name}
-            image={item.thumbnail}
+            image={item.thumbnail || item.profile_image}
+            type={type}
           />
         ))}
       </div>
