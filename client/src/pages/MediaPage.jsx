@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
@@ -18,13 +18,14 @@ const MediaPage = () => {
   const [inWatchlist, setInWatchlist] = useState(false);
   const [watchlistLoading, setWatchlistLoading] = useState(false);
   const [inAdminMode, setInAdminMode] = useState(getInAdminMode());
-  const [showAddCastModal, setShowAddCastModal] = useState(false);
-  const [showAddDirectorModal, setShowAddDirectorModal] = useState(false);
   const [showAddSeasonModal, setShowAddSeasonModal] = useState(false);
-  const [addCastForm, setAddCastForm] = useState({ person_id: "", name: "" });
-  const [addDirectorForm, setAddDirectorForm] = useState({ person_id: "", name: "" });
   const [addSeasonForm, setAddSeasonForm] = useState({ number: "", title: "", release_date: "" });
+  const [searchPopupType, setSearchPopupType] = useState(null);
+  const [searchPopupQuery, setSearchPopupQuery] = useState("");
+  const [searchPopupResults, setSearchPopupResults] = useState([]);
+  const [searchPopupLoading, setSearchPopupLoading] = useState(false);
   const [addingItem, setAddingItem] = useState(false);
+  const debounceRef = useRef(null);
 
   const [showEditMediaModal, setShowEditMediaModal] = useState(false);
   const [editMediaForm, setEditMediaForm] = useState({
@@ -269,6 +270,107 @@ const MediaPage = () => {
     } finally {
       setWatchlistLoading(false);
     }
+  };
+
+  const fetchPopupResults = async (query) => {
+    if (query.trim().length < 2) {
+      setSearchPopupResults([]);
+      return;
+    }
+    setSearchPopupLoading(true);
+    try {
+      const res = await authenticatedFetch(`http://localhost:5000/api/search?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (data.success) {
+        setSearchPopupResults(data.results.filter(r => r.type === "person"));
+      }
+    } catch (err) {
+      console.error("Search error:", err);
+    } finally {
+      setSearchPopupLoading(false);
+    }
+  };
+
+  const handlePopupSearchChange = (e) => {
+    const val = e.target.value;
+    setSearchPopupQuery(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchPopupResults(val), 300);
+  };
+
+  const openSearchPopup = (type) => {
+    setSearchPopupType(type);
+    setSearchPopupQuery("");
+    setSearchPopupResults([]);
+  };
+
+  const closeSearchPopup = () => {
+    setSearchPopupType(null);
+    setSearchPopupQuery("");
+    setSearchPopupResults([]);
+  };
+
+  const addDirectorFromSearch = async (personId, personName) => {
+    setAddingItem(true);
+    try {
+      const res = await authenticatedFetch(
+        "http://localhost:5000/api/admin/media-personality/add",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            media_id: id,
+            person_id: personId,
+            role: "director",
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setDirectors([...directors, { id: personId, name: personName, profile_image: null }]);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setAddingItem(false);
+    }
+  };
+
+  const addCastFromSearch = async (personId, personName) => {
+    setAddingItem(true);
+    try {
+      const res = await authenticatedFetch(
+        "http://localhost:5000/api/admin/media-personality/add",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            media_id: id,
+            person_id: personId,
+            role: "actor",
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        setCast([...cast, { id: personId, name: personName, profile_image: null }]);
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    } finally {
+      setAddingItem(false);
+    }
+  };
+
+  const handlePopupResultClick = (result) => {
+    if (searchPopupType === "director") {
+      addDirectorFromSearch(result.id, result.name);
+    } else if (searchPopupType === "cast") {
+      addCastFromSearch(result.id, result.name);
+    }
+    closeSearchPopup();
   };
 
   const handleAddCast = async () => {
@@ -630,7 +732,7 @@ const MediaPage = () => {
                 ))}
                 {inAdminMode && (
                   <div
-                    onClick={() => setShowAddDirectorModal(true)}
+                    onClick={() => openSearchPopup("director")}
                     style={{
                       width: "160px",
                       height: "200px",
@@ -677,7 +779,7 @@ const MediaPage = () => {
                 ))}
                 {inAdminMode && (
                   <div
-                    onClick={() => setShowAddCastModal(true)}
+                    onClick={() => openSearchPopup("cast")}
                     style={{
                       width: "160px",
                       height: "200px",
@@ -769,199 +871,125 @@ const MediaPage = () => {
             inAdminMode={inAdminMode}
           />
 
-          {/* Add Director Modal */}
-          {showAddDirectorModal && (
+        {/* Unified Search Popup */}
+        {searchPopupType && (
+          <div style={{
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+            background: "rgba(0,0,0,0.7)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 9999,
+          }}>
             <div style={{
-              position: "fixed",
-              top: "0",
-              left: "0",
-              right: "0",
-              bottom: "0",
-              background: "rgba(0, 0, 0, 0.7)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: "2000",
+              background: "#1a1f3a",
+              borderRadius: "12px",
+              padding: "24px",
+              width: "480px",
+              maxWidth: "90vw",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+              border: "1px solid rgba(255,90,126,0.3)",
             }}>
-              <div style={{
-                background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)",
-                padding: "32px",
-                borderRadius: "12px",
-                border: "1px solid rgba(168, 85, 247, 0.3)",
-                maxWidth: "500px",
-                width: "90%",
-              }}>
-                <h3 style={{ color: "#a855f7", marginBottom: "20px" }}>Add Director</h3>
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Person ID *</label>
-                  <input
-                    type="number"
-                    value={addDirectorForm.person_id}
-                    onChange={(e) => setAddDirectorForm({ ...addDirectorForm, person_id: e.target.value })}
-                    placeholder="Enter person ID"
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      background: "#254061",
-                      border: "1px solid rgba(168, 85, 247, 0.3)",
-                      borderRadius: "8px",
-                      color: "#ffffff",
-                      boxSizing: "border-box",
-                    }}
-                  />
-                </div>
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Name (for reference)</label>
-                  <input
-                    type="text"
-                    value={addDirectorForm.name}
-                    onChange={(e) => setAddDirectorForm({ ...addDirectorForm, name: e.target.value })}
-                    placeholder="Enter name"
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      background: "#254061",
-                      border: "1px solid rgba(168, 85, 247, 0.3)",
-                      borderRadius: "8px",
-                      color: "#ffffff",
-                      boxSizing: "border-box",
-                    }}
-                  />
-                </div>
-                <div style={{ display: "flex", gap: "12px" }}>
-                  <button
-                    onClick={handleAddDirector}
-                    disabled={addingItem}
-                    style={{
-                      flex: 1,
-                      padding: "12px",
-                      background: "linear-gradient(135deg, #a855f7, #668ef7)",
-                      border: "none",
-                      borderRadius: "8px",
-                      color: "#ffffff",
-                      fontWeight: "600",
-                      cursor: "pointer",
-                      opacity: addingItem ? 0.7 : 1,
-                    }}
-                  >
-                    {addingItem ? "Adding..." : "Add"}
-                  </button>
-                  <button
-                    onClick={() => setShowAddDirectorModal(false)}
-                    style={{
-                      flex: 1,
-                      padding: "12px",
-                      background: "rgba(168, 85, 247, 0.2)",
-                      border: "1px solid rgba(168, 85, 247, 0.3)",
-                      borderRadius: "8px",
-                      color: "#ffffff",
-                      fontWeight: "600",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Add Cast Modal */}
-          {showAddCastModal && (
-            <div style={{
-              position: "fixed",
-              top: "0",
-              left: "0",
-              right: "0",
-              bottom: "0",
-              background: "rgba(0, 0, 0, 0.7)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: "2000",
-            }}>
-              <div style={{
-                background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)",
-                padding: "32px",
-                borderRadius: "12px",
-                border: "1px solid rgba(168, 85, 247, 0.3)",
-                maxWidth: "500px",
-                width: "90%",
-              }}>
-                <h3 style={{ color: "#a855f7", marginBottom: "20px" }}>Add Cast Member</h3>
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Person ID *</label>
-                  <input
-                    type="number"
-                    value={addCastForm.person_id}
-                    onChange={(e) => setAddCastForm({ ...addCastForm, person_id: e.target.value })}
-                    placeholder="Enter person ID"
+              {/* Title */}
+              <h3 style={{ color: "#fff", marginBottom: "16px", fontSize: "18px" }}>
+                {searchPopupType === "director" && "Search Director"}
+                {searchPopupType === "cast" && "Search Cast Member"}
+              </h3>
+
+              {/* Search Input */}
+              <input
+                type="text"
+                placeholder="Type to search..."
+                value={searchPopupQuery}
+                onChange={handlePopupSearchChange}
+                autoFocus
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255,90,126,0.4)",
+                  background: "rgba(255,255,255,0.05)",
+                  color: "#fff",
+                  fontSize: "14px",
+                  marginBottom: "12px",
+                  boxSizing: "border-box",
+                  outline: "none",
+                }}
+              />
+
+              {/* Loading */}
+              {searchPopupLoading && (
+                <p style={{ color: "#aaa", fontSize: "13px" }}>Searching...</p>
+              )}
+
+              {/* Results */}
+              <div style={{ maxHeight: "280px", overflowY: "auto" }}>
+                {searchPopupResults.map((result) => (
+                  <div
+                    key={result.id}
+                    onClick={() => handlePopupResultClick(result)}
                     style={{
-                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
                       padding: "10px",
-                      background: "#254061",
-                      border: "1px solid rgba(168, 85, 247, 0.3)",
                       borderRadius: "8px",
-                      color: "#ffffff",
-                      boxSizing: "border-box",
-                    }}
-                  />
-                </div>
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Name (for reference)</label>
-                  <input
-                    type="text"
-                    value={addCastForm.name}
-                    onChange={(e) => setAddCastForm({ ...addCastForm, name: e.target.value })}
-                    placeholder="Enter name"
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      background: "#254061",
-                      border: "1px solid rgba(168, 85, 247, 0.3)",
-                      borderRadius: "8px",
-                      color: "#ffffff",
-                      boxSizing: "border-box",
-                    }}
-                  />
-                </div>
-                <div style={{ display: "flex", gap: "12px" }}>
-                  <button
-                    onClick={handleAddCast}
-                    disabled={addingItem}
-                    style={{
-                      flex: 1,
-                      padding: "12px",
-                      background: "linear-gradient(135deg, #a855f7, #668ef7)",
-                      border: "none",
-                      borderRadius: "8px",
-                      color: "#ffffff",
-                      fontWeight: "600",
                       cursor: "pointer",
-                      opacity: addingItem ? 0.7 : 1,
+                      marginBottom: "6px",
+                      background: "rgba(255,255,255,0.04)",
+                      transition: "background 0.2s",
                     }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(255,90,126,0.15)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
                   >
-                    {addingItem ? "Adding..." : "Add"}
-                  </button>
-                  <button
-                    onClick={() => setShowAddCastModal(false)}
-                    style={{
-                      flex: 1,
-                      padding: "12px",
-                      background: "rgba(168, 85, 247, 0.2)",
-                      border: "1px solid rgba(168, 85, 247, 0.3)",
-                      borderRadius: "8px",
-                      color: "#ffffff",
-                      fontWeight: "600",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
+                    <img
+                      src={result.thumbnail || "/placeholder.png"}
+                      alt={result.name}
+                      style={{
+                        width: "40px", height: "40px",
+                        borderRadius: "6px", objectFit: "cover",
+                        background: "#333",
+                      }}
+                    />
+                    <div>
+                      <div style={{ color: "#fff", fontSize: "14px", fontWeight: 500 }}>
+                        {result.name}
+                      </div>
+                      <div style={{ color: "#aaa", fontSize: "12px" }}>
+                        Person
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* No results message */}
+                {!searchPopupLoading &&
+                 searchPopupQuery.trim().length >= 2 &&
+                 searchPopupResults.length === 0 && (
+                  <p style={{ color: "#aaa", fontSize: "13px", textAlign: "center", padding: "16px" }}>
+                    No results found
+                  </p>
+                )}
               </div>
+
+              {/* Cancel Button */}
+              <button
+                onClick={closeSearchPopup}
+                style={{
+                  marginTop: "16px",
+                  padding: "8px 20px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255,90,126,0.4)",
+                  background: "transparent",
+                  color: "#ff5a7e",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                }}
+              >
+                Cancel
+              </button>
             </div>
-          )}
+          </div>
+        )}
 
           {/* Add Season Modal */}
           {showAddSeasonModal && (
