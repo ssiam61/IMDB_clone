@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
 import CategoryRow from "../components/CategoryRow";
@@ -6,6 +8,11 @@ import AdminModePanel from "../components/AdminModePanel";
 import { authenticatedFetch, getUser, getInAdminMode } from "../utils/auth";
 
 const UserDashboard = () => {
+  const navigate = useNavigate();
+  const dropdownRef = useRef(null);
+  const searchWrapperRef = useRef(null);
+  const debounceTimerRef = useRef(null);
+
   const [allMedia, setAllMedia] = useState([]);
   const [highlyRated, setHighlyRated] = useState([]);
   const [criticallyAcclaimed, setCriticallyAcclaimed] = useState([]);
@@ -16,6 +23,9 @@ const UserDashboard = () => {
   const [starStudded, setStarStudded] = useState([]);
   const [directedByFavorites, setDirectedByFavorites] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
   const [inAdminMode, setInAdminMode] = useState(getInAdminMode());
 
   useEffect(() => {
@@ -61,9 +71,112 @@ const UserDashboard = () => {
     };
   }, []);
 
+  const fetchSearchResults = async (query) => {
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    try {
+      const res = await authenticatedFetch(`http://localhost:5000/api/search?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+
+      if (data.success) {
+        setSearchResults(data.results);
+        setShowDropdown(data.results.length > 0);
+      } else {
+        setSearchResults([]);
+        setShowDropdown(false);
+      }
+    } catch (err) {
+      console.error("Search error:", err);
+      setSearchResults([]);
+      setShowDropdown(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        searchWrapperRef.current &&
+        !searchWrapperRef.current.contains(event.target)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setShowDropdown(false);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showDropdown]);
+
+  useEffect(() => {
+    const updatePosition = () => {
+      if (searchWrapperRef.current) {
+        const rect = searchWrapperRef.current.getBoundingClientRect();
+        setDropdownPos({
+          top: rect.bottom + 8,
+          left: rect.left,
+          width: rect.width,
+        });
+      }
+    };
+
+    if (showDropdown && searchWrapperRef.current) {
+      requestAnimationFrame(() => {
+        updatePosition();
+      });
+
+      window.addEventListener("scroll", updatePosition);
+      window.addEventListener("resize", updatePosition);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [showDropdown, searchResults]);
+
+  const handleSearchInputChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      fetchSearchResults(value);
+    }, 300);
+  };
+
+  const handleResultClick = (result) => {
+    if (result.type === "person") {
+      navigate(`/person/${result.id}`);
+    } else {
+      navigate(`/media/${result.id}`);
+    }
+    setShowDropdown(false);
+    setSearchQuery("");
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log("Search:", searchQuery);
   };
 
   return (
@@ -114,10 +227,12 @@ const UserDashboard = () => {
             }}
           >
             <div
+              ref={searchWrapperRef}
               style={{
                 position: "relative",
                 flex: "1",
                 maxWidth: "500px",
+                zIndex: 9999,
               }}
             >
               <div
@@ -136,7 +251,7 @@ const UserDashboard = () => {
                 type="text"
                 placeholder="Search movies, shows, people..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchInputChange}
                 style={{
                   width: "100%",
                   padding: "16px 16px 16px 50px",
@@ -160,6 +275,118 @@ const UserDashboard = () => {
                   e.target.style.background = "rgba(37, 64, 97, 0.4)";
                 }}
               />
+              {showDropdown && searchResults.length > 0 &&
+                createPortal(
+                  <div
+                    ref={dropdownRef}
+                    style={{
+                      position: "fixed",
+                      top: `${dropdownPos.top}px`,
+                      left: `${dropdownPos.left}px`,
+                      width: `${dropdownPos.width}px`,
+                      maxHeight: "400px",
+                      overflowY: "auto",
+                      background: "rgba(26, 31, 58, 0.95)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "12px",
+                      backdropFilter: "blur(10px)",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                      zIndex: 9999,
+                    }}
+                  >
+                    {searchResults.map((result, index) => (
+                      <div
+                        key={`${result.type}-${result.id}-${index}`}
+                        onClick={() => handleResultClick(result)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          padding: "12px 16px",
+                          borderBottom: index !== searchResults.length - 1 ? "1px solid rgba(255, 90, 126, 0.1)" : "none",
+                          cursor: "pointer",
+                          transition: "background-color 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "rgba(255, 90, 126, 0.1)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "transparent";
+                        }}
+                      >
+                        <img
+                          src={result.thumbnail || "/images/placeholder.png"}
+                          alt={result.name}
+                          style={{
+                            width: "40px",
+                            height: "40px",
+                            borderRadius: "6px",
+                            marginRight: "12px",
+                            objectFit: "cover",
+                          }}
+                          onError={(e) => {
+                            e.target.src = "/images/placeholder.png";
+                          }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              color: "#ffffff",
+                              fontSize: "14px",
+                              fontWeight: "500",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {result.name}
+                          </div>
+                        </div>
+                        <span
+                          style={{
+                            background: "linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(255, 90, 126, 0.3))",
+                            color: result.type === "person" ? "#a855f7" : "#ff5a7e",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            textTransform: "uppercase",
+                            marginLeft: "8px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {result.type === "person" ? "Person" : result.type === "series" ? "Series" : "Movie"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>,
+                  document.body
+                )}
+              {showDropdown && searchResults.length === 0 && searchQuery.trim().length >= 2 &&
+                createPortal(
+                  <div
+                    style={{
+                      position: "fixed",
+                      top: `${dropdownPos.top}px`,
+                      left: `${dropdownPos.left}px`,
+                      width: `${dropdownPos.width}px`,
+                      maxHeight: "400px",
+                      overflowY: "auto",
+                      background: "rgba(26, 31, 58, 0.95)",
+                      border: "1px solid rgba(255, 90, 126, 0.3)",
+                      borderRadius: "12px",
+                      padding: "16px",
+                      backdropFilter: "blur(10px)",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                      zIndex: 9999,
+                      textAlign: "center",
+                      color: "#d0d8e8",
+                      fontSize: "14px",
+                    }}
+                  >
+                    No results found
+                  </div>,
+                  document.body
+                )}
             </div>
 
             <button

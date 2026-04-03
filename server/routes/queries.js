@@ -1589,4 +1589,39 @@ router.delete("/reply/:replyId", async (req, res) => {
   }
 });
 
+router.get("/search", async (req, res) => {
+  const query = req.query.q;
+
+  if (!query || query.trim().length === 0) {
+    return res.json({ success: true, results: [] });
+  }
+
+  try {
+    const searchPattern = `%${query}%`;
+
+    const results = await pool.query(
+      `
+      (
+        SELECT id, name, thumbnail, media_type as type, description
+        FROM media
+        WHERE name ILIKE $1 OR description ILIKE $1
+      )
+      UNION ALL
+      (
+        SELECT id, name, profile_image as thumbnail, 'person'::text as type, biography as description
+        FROM person
+        WHERE name ILIKE $1 OR biography ILIKE $1
+      )
+      LIMIT 10
+      `,
+      [searchPattern]
+    );
+
+    res.json({ success: true, results: results.rows });
+  } catch (err) {
+    console.error(err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
 module.exports = router;
