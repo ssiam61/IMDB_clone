@@ -84,7 +84,12 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId, inAdminMod
     }
   };
 
-  const handleReply = async (parentId, replyText, isReplyToReply = false, attachmentUrls = []) => {
+  const handleReply = async (
+    parentId,
+    replyText,
+    isReplyToReply = false,
+    attachmentUrls = []
+  ) => {
     try {
       const payload = {
         userId: currentUserId,
@@ -110,7 +115,7 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId, inAdminMod
       const data = await response.json();
 
       if (data.success) {
-        await fetchReviews();
+        await fetchReviews();   // ✅ correct
       } else {
         setError(data.error || "Failed to create reply");
       }
@@ -119,6 +124,7 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId, inAdminMod
       setError("Failed to create reply");
     }
   };
+
 
   const handleDeleteReview = async (reviewId) => {
     try {
@@ -144,8 +150,16 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId, inAdminMod
     }
   };
 
-  const handleDeleteReply = async (replyId) => {
-    console.log("handleDeleteReply called with replyId:", replyId, "userId:", currentUserId, "isAdmin:", inAdminMode);
+    const handleDeleteReply = async (replyId) => {
+    console.log(
+      "handleDeleteReply called with replyId:",
+      replyId,
+      "userId:",
+      currentUserId,
+      "isAdmin:",
+      inAdminMode
+    );
+
     try {
       const response = await fetch(`${API_BASE_URL}/reply/${replyId}`, {
         method: "DELETE",
@@ -153,7 +167,10 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId, inAdminMod
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("authToken")}`,
         },
-        body: JSON.stringify({ userId: currentUserId, isAdmin: inAdminMode }),
+        body: JSON.stringify({
+          userId: currentUserId,
+          isAdmin: inAdminMode,
+        }),
       });
 
       const data = await response.json();
@@ -172,15 +189,12 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId, inAdminMod
 
   const handleVote = async (itemId, voteType, isReply = false) => {
     try {
-      // Helper to find item recursively
       const findItem = (items, targetId, isTarget) => {
         for (let item of items) {
-          // Check if this item matches: correct ID and correct type
           const itemIsReply = item.type === 'reply';
           if (item.id === targetId && itemIsReply === isTarget) {
             return item;
           }
-          // Recursively search nested replies
           if (item.replies && item.replies.length > 0) {
             const found = findItem(item.replies, targetId, isTarget);
             if (found) return found;
@@ -254,6 +268,26 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId, inAdminMod
       await fetchReviews();
     }
   };
+
+  const removeReplyById = (items, replyId) => {
+  return items
+    .map(item => {
+      if (item.id === replyId && item.type === "reply") {
+        return null;
+      }
+
+      if (item.replies && item.replies.length > 0) {
+        return {
+          ...item,
+          replies: removeReplyById(item.replies, replyId)
+        };
+      }
+
+      return item;
+    })
+    .filter(Boolean);
+  };
+
 
   if (loading) {
     return (
