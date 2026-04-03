@@ -81,14 +81,14 @@ const ReviewCard = ({ review, onReply, onDelete, onVote, currentUserId }) => {
       <div className="review-actions">
         <div className="review-votes">
           <button 
-            className="vote-btn upvote"
+            className={`vote-btn upvote ${review.userVote === "upvote" ? "active" : ""}`}
             onClick={() => handleVoteClick("upvote")}
             title="Upvote"
           >
             👍 {review.upvote}
           </button>
           <button 
-            className="vote-btn downvote"
+            className={`vote-btn downvote ${review.userVote === "downvote" ? "active" : ""}`}
             onClick={() => handleVoteClick("downvote")}
             title="Downvote"
           >
@@ -252,14 +252,14 @@ const ReplyCard = ({ reply, parentReviewId, onReply, onDelete, onVote, currentUs
       <div className="reply-actions">
         <div className="reply-votes">
           <button 
-            className="vote-btn upvote"
+            className={`vote-btn upvote ${reply.userVote === "upvote" ? "active" : ""}`}
             onClick={() => handleVoteClick("upvote")}
             title="Upvote"
           >
             👍 {reply.upvote}
           </button>
           <button 
-            className="vote-btn downvote"
+            className={`vote-btn downvote ${reply.userVote === "downvote" ? "active" : ""}`}
             onClick={() => handleVoteClick("downvote")}
             title="Downvote"
           >

@@ -170,27 +170,73 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId }) => {
 
   const handleVote = async (itemId, voteType, isReply = false) => {
     try {
-      const endpoint = isReply ? `${API_BASE_URL}/reply/vote/${itemId}` : `${API_BASE_URL}/review/vote/${itemId}`;
+      // Helper to find item recursively
+      const findItem = (items, targetId) => {
+        for (let item of items) {
+          if (item.id === targetId) return item;
+          if (item.replies) {
+            const found = findItem(item.replies, targetId);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
 
+      const item = findItem(reviews, itemId);
+      if (!item) return;
+
+      let voteToSend = voteType;
+      if (item.userVote === voteType) voteToSend = "remove";
+
+      // Update UI optimistically
+      const updateReviewsRecursive = (items, targetId, updated, isRep) => {
+        return items.map((r) => {
+          if (!isRep && r.id === targetId) return updated;
+          if (r.replies) return { ...r, replies: updateReviewsRecursive(r.replies, targetId, updated, true) };
+          return r;
+        });
+      };
+
+      let upDelta = 0, downDelta = 0;
+      if (item.userVote === voteType) {
+        if (voteType === "upvote") upDelta = -1;
+        if (voteType === "downvote") downDelta = -1;
+      } else if (item.userVote) {
+        if (item.userVote === "upvote") upDelta = -1;
+        if (item.userVote === "downvote") downDelta = -1;
+        if (voteType === "upvote") upDelta += 1;
+        if (voteType === "downvote") downDelta += 1;
+      } else {
+        if (voteType === "upvote") upDelta = 1;
+        if (voteType === "downvote") downDelta = 1;
+      }
+
+      setReviews(updateReviewsRecursive(reviews, itemId, {
+        ...item,
+        upvote: item.upvote + upDelta,
+        downvote: item.downvote + downDelta,
+        userVote: voteToSend === "remove" ? null : voteType
+      }, isReply));
+
+      const endpoint = isReply ? `${API_BASE_URL}/reply/vote/${itemId}` : `${API_BASE_URL}/review/vote/${itemId}`;
       const response = await fetch(endpoint, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("authToken")}`,
         },
-        body: JSON.stringify({ voteType }),
+        body: JSON.stringify({ userId: currentUserId, voteType: voteToSend }),
       });
 
       const data = await response.json();
-
-      if (data.success) {
-        await fetchReviews();
-      } else {
+      if (!data.success) {
         setError(data.error || "Failed to vote");
+        await fetchReviews();
       }
     } catch (err) {
       console.error("Error voting:", err);
       setError("Failed to vote");
+      await fetchReviews();
     }
   };
 

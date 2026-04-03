@@ -1062,7 +1062,7 @@ router.delete("/admin/person/delete/:id", async (req, res) => {
 // ============ COMMENT/REVIEW SYSTEM ENDPOINTS ============
 
 // Helper function to recursively fetch replies with nested structure
-const fetchRepliesForReview = async (reviewOrReplyId, isParentReply = false) => {
+const fetchRepliesForReview = async (reviewOrReplyId, isParentReply = false, userId = null) => {
   try {
     const repliesQuery = isParentReply
       ? `SELECT r.*, u.username, u.profile_picture
@@ -1085,8 +1085,17 @@ const fetchRepliesForReview = async (reviewOrReplyId, isParentReply = false) => 
       const attachmentsResult = await pool.query(attachmentsQuery, [reply.id]);
       reply.attachments = attachmentsResult.rows.map(row => row.attachment);
 
+      // Get user's vote status if userId provided
+      if (userId) {
+        const userVoteResult = await pool.query(
+          "SELECT vote_type FROM reply_votes WHERE user_id = $1 AND reply_id = $2",
+          [userId, reply.id]
+        );
+        reply.userVote = userVoteResult.rows.length > 0 ? userVoteResult.rows[0].vote_type : null;
+      }
+
       // Recursively fetch nested replies
-      reply.replies = await fetchRepliesForReview(reply.id, true);
+      reply.replies = await fetchRepliesForReview(reply.id, true, userId);
     }
 
     return replies;
@@ -1099,6 +1108,7 @@ const fetchRepliesForReview = async (reviewOrReplyId, isParentReply = false) => 
 // GET reviews for media with all replies and user info
 router.get("/review/media/:mediaId", async (req, res) => {
   const { mediaId } = req.params;
+  const userId = req.query.userId; // Optional - to get user's vote status
 
   try {
     const reviewsQuery = `
@@ -1118,8 +1128,17 @@ router.get("/review/media/:mediaId", async (req, res) => {
       const attachmentsResult = await pool.query(attachmentsQuery, [review.id]);
       review.attachments = attachmentsResult.rows.map(row => row.attachment);
 
+      // Get user's vote status if userId provided
+      if (userId) {
+        const userVoteResult = await pool.query(
+          "SELECT vote_type FROM review_votes WHERE user_id = $1 AND review_id = $2",
+          [userId, review.id]
+        );
+        review.userVote = userVoteResult.rows.length > 0 ? userVoteResult.rows[0].vote_type : null;
+      }
+
       // Fetch nested replies
-      review.replies = await fetchRepliesForReview(review.id, false);
+      review.replies = await fetchRepliesForReview(review.id, false, userId);
     }
 
     res.json({ success: true, reviews });
@@ -1132,6 +1151,7 @@ router.get("/review/media/:mediaId", async (req, res) => {
 // GET reviews for season with all replies and user info
 router.get("/review/season/:seasonId", async (req, res) => {
   const { seasonId } = req.params;
+  const userId = req.query.userId; // Optional - to get user's vote status
 
   try {
     const reviewsQuery = `
@@ -1151,8 +1171,17 @@ router.get("/review/season/:seasonId", async (req, res) => {
       const attachmentsResult = await pool.query(attachmentsQuery, [review.id]);
       review.attachments = attachmentsResult.rows.map(row => row.attachment);
 
+      // Get user's vote status if userId provided
+      if (userId) {
+        const userVoteResult = await pool.query(
+          "SELECT vote_type FROM review_votes WHERE user_id = $1 AND review_id = $2",
+          [userId, review.id]
+        );
+        review.userVote = userVoteResult.rows.length > 0 ? userVoteResult.rows[0].vote_type : null;
+      }
+
       // Fetch nested replies
-      review.replies = await fetchRepliesForReview(review.id, false);
+      review.replies = await fetchRepliesForReview(review.id, false, userId);
     }
 
     res.json({ success: true, reviews });
@@ -1165,6 +1194,7 @@ router.get("/review/season/:seasonId", async (req, res) => {
 // GET reviews for episode with all replies and user info
 router.get("/review/episode/:episodeId", async (req, res) => {
   const { episodeId } = req.params;
+  const userId = req.query.userId; // Optional - to get user's vote status
 
   try {
     const reviewsQuery = `
@@ -1184,8 +1214,17 @@ router.get("/review/episode/:episodeId", async (req, res) => {
       const attachmentsResult = await pool.query(attachmentsQuery, [review.id]);
       review.attachments = attachmentsResult.rows.map(row => row.attachment);
 
+      // Get user's vote status if userId provided
+      if (userId) {
+        const userVoteResult = await pool.query(
+          "SELECT vote_type FROM review_votes WHERE user_id = $1 AND review_id = $2",
+          [userId, review.id]
+        );
+        review.userVote = userVoteResult.rows.length > 0 ? userVoteResult.rows[0].vote_type : null;
+      }
+
       // Fetch nested replies
-      review.replies = await fetchRepliesForReview(review.id, false);
+      review.replies = await fetchRepliesForReview(review.id, false, userId);
     }
 
     res.json({ success: true, reviews });
@@ -1292,60 +1331,180 @@ router.post("/reply/create", async (req, res) => {
   }
 });
 
-// PUT update review upvote/downvote
+// PUT update review upvote/downvote with per-user tracking
 router.put("/review/vote/:reviewId", async (req, res) => {
   const { reviewId } = req.params;
-  const { voteType } = req.body;
+  const { userId, voteType } = req.body;
 
   try {
-    if (!["upvote", "downvote"].includes(voteType)) {
-      return res.json({ success: false, error: "Vote type must be 'upvote' or 'downvote'" });
+    if (!userId) {
+      return res.json({ success: false, error: "User ID is required" });
     }
 
-    let updateQuery;
-    if (voteType === "upvote") {
-      updateQuery = "UPDATE review SET upvote = upvote + 1 WHERE id = $1 RETURNING *";
-    } else {
-      updateQuery = "UPDATE review SET downvote = downvote + 1 WHERE id = $1 RETURNING *";
+    if (!["upvote", "downvote", "remove"].includes(voteType)) {
+      return res.json({ success: false, error: "Vote type must be 'upvote', 'downvote', or 'remove'" });
     }
 
-    const result = await pool.query(updateQuery, [reviewId]);
-
-    if (result.rows.length === 0) {
+    // Check if review exists
+    const reviewCheck = await pool.query("SELECT * FROM review WHERE id = $1", [reviewId]);
+    if (reviewCheck.rows.length === 0) {
       return res.json({ success: false, error: "Review not found" });
     }
+    const review = reviewCheck.rows[0];
 
-    res.json({ success: true, review: result.rows[0] });
+    // Check if user already voted
+    const existingVote = await pool.query(
+      "SELECT vote_type FROM review_votes WHERE user_id = $1 AND review_id = $2",
+      [userId, reviewId]
+    );
+
+    let upvoteChange = 0;
+    let downvoteChange = 0;
+
+    if (existingVote.rows.length > 0) {
+      // User already voted - handle vote change or removal
+      const previousVote = existingVote.rows[0].vote_type;
+
+      if (voteType === "remove") {
+        // Remove the vote
+        if (previousVote === "upvote") upvoteChange = -1;
+        if (previousVote === "downvote") downvoteChange = -1;
+        await pool.query("DELETE FROM review_votes WHERE user_id = $1 AND review_id = $2", [userId, reviewId]);
+      } else if (voteType === previousVote) {
+        // Same vote clicked again - toggle off
+        if (voteType === "upvote") upvoteChange = -1;
+        if (voteType === "downvote") downvoteChange = -1;
+        await pool.query("DELETE FROM review_votes WHERE user_id = $1 AND review_id = $2", [userId, reviewId]);
+      } else {
+        // Change vote (e.g., upvote -> downvote)
+        if (previousVote === "upvote") upvoteChange = -1;
+        if (previousVote === "downvote") downvoteChange = -1;
+        if (voteType === "upvote") upvoteChange = 1;
+        if (voteType === "downvote") downvoteChange = 1;
+        await pool.query(
+          "UPDATE review_votes SET vote_type = $1 WHERE user_id = $2 AND review_id = $3",
+          [voteType, userId, reviewId]
+        );
+      }
+    } else {
+      // New vote
+      if (voteType !== "remove") {
+        if (voteType === "upvote") upvoteChange = 1;
+        if (voteType === "downvote") downvoteChange = 1;
+        await pool.query(
+          "INSERT INTO review_votes (user_id, review_id, vote_type) VALUES ($1, $2, $3)",
+          [userId, reviewId, voteType]
+        );
+      }
+    }
+
+    // Update review vote counts
+    const updatedReview = await pool.query(
+      "UPDATE review SET upvote = upvote + $1, downvote = downvote + $2 WHERE id = $3 RETURNING *",
+      [upvoteChange, downvoteChange, reviewId]
+    );
+
+    // Get user's current vote status
+    const userVote = await pool.query(
+      "SELECT vote_type FROM review_votes WHERE user_id = $1 AND review_id = $2",
+      [userId, reviewId]
+    );
+
+    res.json({
+      success: true,
+      review: updatedReview.rows[0],
+      userVote: userVote.rows.length > 0 ? userVote.rows[0].vote_type : null
+    });
   } catch (err) {
     console.error("Error updating review vote:", err);
     res.json({ success: false, error: "Server error" });
   }
 });
 
-// PUT update reply upvote/downvote
+// PUT update reply upvote/downvote with per-user tracking
 router.put("/reply/vote/:replyId", async (req, res) => {
   const { replyId } = req.params;
-  const { voteType } = req.body;
+  const { userId, voteType } = req.body;
 
   try {
-    if (!["upvote", "downvote"].includes(voteType)) {
-      return res.json({ success: false, error: "Vote type must be 'upvote' or 'downvote'" });
+    if (!userId) {
+      return res.json({ success: false, error: "User ID is required" });
     }
 
-    let updateQuery;
-    if (voteType === "upvote") {
-      updateQuery = "UPDATE reply SET upvote = upvote + 1 WHERE id = $1 RETURNING *";
-    } else {
-      updateQuery = "UPDATE reply SET downvote = downvote + 1 WHERE id = $1 RETURNING *";
+    if (!["upvote", "downvote", "remove"].includes(voteType)) {
+      return res.json({ success: false, error: "Vote type must be 'upvote', 'downvote', or 'remove'" });
     }
 
-    const result = await pool.query(updateQuery, [replyId]);
-
-    if (result.rows.length === 0) {
+    // Check if reply exists
+    const replyCheck = await pool.query("SELECT * FROM reply WHERE id = $1", [replyId]);
+    if (replyCheck.rows.length === 0) {
       return res.json({ success: false, error: "Reply not found" });
     }
+    const reply = replyCheck.rows[0];
 
-    res.json({ success: true, reply: result.rows[0] });
+    // Check if user already voted
+    const existingVote = await pool.query(
+      "SELECT vote_type FROM reply_votes WHERE user_id = $1 AND reply_id = $2",
+      [userId, replyId]
+    );
+
+    let upvoteChange = 0;
+    let downvoteChange = 0;
+
+    if (existingVote.rows.length > 0) {
+      // User already voted - handle vote change or removal
+      const previousVote = existingVote.rows[0].vote_type;
+
+      if (voteType === "remove") {
+        // Remove the vote
+        if (previousVote === "upvote") upvoteChange = -1;
+        if (previousVote === "downvote") downvoteChange = -1;
+        await pool.query("DELETE FROM reply_votes WHERE user_id = $1 AND reply_id = $2", [userId, replyId]);
+      } else if (voteType === previousVote) {
+        // Same vote clicked again - toggle off
+        if (voteType === "upvote") upvoteChange = -1;
+        if (voteType === "downvote") downvoteChange = -1;
+        await pool.query("DELETE FROM reply_votes WHERE user_id = $1 AND reply_id = $2", [userId, replyId]);
+      } else {
+        // Change vote (e.g., upvote -> downvote)
+        if (previousVote === "upvote") upvoteChange = -1;
+        if (previousVote === "downvote") downvoteChange = -1;
+        if (voteType === "upvote") upvoteChange = 1;
+        if (voteType === "downvote") downvoteChange = 1;
+        await pool.query(
+          "UPDATE reply_votes SET vote_type = $1 WHERE user_id = $2 AND reply_id = $3",
+          [voteType, userId, replyId]
+        );
+      }
+    } else {
+      // New vote
+      if (voteType !== "remove") {
+        if (voteType === "upvote") upvoteChange = 1;
+        if (voteType === "downvote") downvoteChange = 1;
+        await pool.query(
+          "INSERT INTO reply_votes (user_id, reply_id, vote_type) VALUES ($1, $2, $3)",
+          [userId, replyId, voteType]
+        );
+      }
+    }
+
+    // Update reply vote counts
+    const updatedReply = await pool.query(
+      "UPDATE reply SET upvote = upvote + $1, downvote = downvote + $2 WHERE id = $3 RETURNING *",
+      [upvoteChange, downvoteChange, replyId]
+    );
+
+    // Get user's current vote status
+    const userVote = await pool.query(
+      "SELECT vote_type FROM reply_votes WHERE user_id = $1 AND reply_id = $2",
+      [userId, replyId]
+    );
+
+    res.json({
+      success: true,
+      reply: updatedReply.rows[0],
+      userVote: userVote.rows.length > 0 ? userVote.rows[0].vote_type : null
+    });
   } catch (err) {
     console.error("Error updating reply vote:", err);
     res.json({ success: false, error: "Server error" });

@@ -198,3 +198,19 @@ CREATE TABLE reply_attachments (
     attachment VARCHAR(500) NOT NULL,
     PRIMARY KEY (reply_id, attachment)
 );
+
+CREATE TABLE review_votes (
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    review_id INT REFERENCES review(id) ON DELETE CASCADE,
+    vote_type VARCHAR(10) CHECK (vote_type IN ('upvote', 'downvote')),
+    PRIMARY KEY (user_id, review_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE reply_votes (
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    reply_id INT REFERENCES reply(id) ON DELETE CASCADE,
+    vote_type VARCHAR(10) CHECK (vote_type IN ('upvote', 'downvote')),
+    PRIMARY KEY (user_id, reply_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
