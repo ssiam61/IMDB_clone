@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import UserNavbar from "../components/UserNavbar";
+import CommentThread from "../components/CommentThread";
+import { getUser } from "../utils/auth";
 
 const EpisodePage = () => {
   const { id } = useParams();
@@ -12,6 +14,8 @@ const EpisodePage = () => {
   const [reviewText, setReviewText] = useState("");
   const [reviewStars, setReviewStars] = useState(0);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+
+  const userId = getUser()?.id;
 
   const pageStyles = {
     container: {
@@ -334,9 +338,10 @@ const EpisodePage = () => {
           )}
 
           <h3 style={pageStyles.sectionTitle}>Reviews</h3>
-          <p style={{ color: "#a0aec0", textAlign: "center", padding: "20px" }}>
-            No reviews yet — coming soon.
-          </p>
+          <CommentThread 
+            episodeId={parseInt(id)} 
+            currentUserId={userId}
+          />
         </div>
       </div>
     </>

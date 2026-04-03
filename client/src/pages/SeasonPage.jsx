@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import UserNavbar from "../components/UserNavbar";
 import EpisodeCard from "../components/EpisodeCard";
-import { authenticatedFetch, getInAdminMode } from "../utils/auth";
+import CommentThread from "../components/CommentThread";
+import { authenticatedFetch, getUser, getInAdminMode } from "../utils/auth";
 
 const SeasonPage = () => {
   const { id } = useParams();
@@ -22,6 +23,8 @@ const SeasonPage = () => {
     release_date: "",
     duration: "",
   });
+
+  const userId = getUser()?.id;
   const [addingEpisode, setAddingEpisode] = useState(false);
   const [showEditSeasonModal, setShowEditSeasonModal] = useState(false);
   const [editSeasonForm, setEditSeasonForm] = useState({
@@ -542,9 +545,10 @@ const SeasonPage = () => {
           )}
 
           <h3 style={pageStyles.sectionTitle}>Reviews</h3>
-          <p style={{ color: "#a0aec0", textAlign: "center", padding: "20px" }}>
-            No reviews yet — coming soon.
-          </p>
+          <CommentThread 
+            seasonId={parseInt(id)} 
+            currentUserId={userId}
+          />
 
           {/* Add Episode Modal */}
           {showAddEpisodeModal && (

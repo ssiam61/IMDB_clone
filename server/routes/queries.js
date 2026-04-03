@@ -1059,4 +1059,359 @@ router.delete("/admin/person/delete/:id", async (req, res) => {
   }
 });
 
+// ============ COMMENT/REVIEW SYSTEM ENDPOINTS ============
+
+// Helper function to recursively fetch replies with nested structure
+const fetchRepliesForReview = async (reviewOrReplyId, isParentReply = false) => {
+  try {
+    const repliesQuery = isParentReply
+      ? `SELECT r.*, u.username, u.profile_picture
+         FROM reply r
+         JOIN users u ON u.id = r.user_id
+         WHERE r.parent_reply_id = $1 AND r.is_removed = false
+         ORDER BY r.created_at ASC`
+      : `SELECT r.*, u.username, u.profile_picture
+         FROM reply r
+         JOIN users u ON u.id = r.user_id
+         WHERE r.parent_review_id = $1 AND r.parent_reply_id IS NULL AND r.is_removed = false
+         ORDER BY r.created_at ASC`;
+
+    const repliesResult = await pool.query(repliesQuery, [reviewOrReplyId]);
+    const replies = repliesResult.rows;
+
+    // Get attachments for each reply
+    for (let reply of replies) {
+      const attachmentsQuery = "SELECT attachment FROM reply_attachments WHERE reply_id = $1";
+      const attachmentsResult = await pool.query(attachmentsQuery, [reply.id]);
+      reply.attachments = attachmentsResult.rows.map(row => row.attachment);
+
+      // Recursively fetch nested replies
+      reply.replies = await fetchRepliesForReview(reply.id, true);
+    }
+
+    return replies;
+  } catch (err) {
+    console.error("Error fetching replies:", err);
+    return [];
+  }
+};
+
+// GET reviews for media with all replies and user info
+router.get("/review/media/:mediaId", async (req, res) => {
+  const { mediaId } = req.params;
+
+  try {
+    const reviewsQuery = `
+      SELECT r.*, u.username, u.profile_picture
+      FROM review r
+      JOIN users u ON u.id = r.user_id
+      WHERE r.media_id = $1 AND r.is_removed = false
+      ORDER BY r.created_at DESC
+    `;
+    
+    const reviewsResult = await pool.query(reviewsQuery, [mediaId]);
+    const reviews = reviewsResult.rows;
+
+    // Get attachments and replies for each review
+    for (let review of reviews) {
+      const attachmentsQuery = "SELECT attachment FROM post_attachments WHERE post_id = $1";
+      const attachmentsResult = await pool.query(attachmentsQuery, [review.id]);
+      review.attachments = attachmentsResult.rows.map(row => row.attachment);
+
+      // Fetch nested replies
+      review.replies = await fetchRepliesForReview(review.id, false);
+    }
+
+    res.json({ success: true, reviews });
+  } catch (err) {
+    console.error("Error fetching reviews:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// GET reviews for season with all replies and user info
+router.get("/review/season/:seasonId", async (req, res) => {
+  const { seasonId } = req.params;
+
+  try {
+    const reviewsQuery = `
+      SELECT r.*, u.username, u.profile_picture
+      FROM review r
+      JOIN users u ON u.id = r.user_id
+      WHERE r.season_id = $1 AND r.is_removed = false
+      ORDER BY r.created_at DESC
+    `;
+    
+    const reviewsResult = await pool.query(reviewsQuery, [seasonId]);
+    const reviews = reviewsResult.rows;
+
+    // Get attachments and replies for each review
+    for (let review of reviews) {
+      const attachmentsQuery = "SELECT attachment FROM post_attachments WHERE post_id = $1";
+      const attachmentsResult = await pool.query(attachmentsQuery, [review.id]);
+      review.attachments = attachmentsResult.rows.map(row => row.attachment);
+
+      // Fetch nested replies
+      review.replies = await fetchRepliesForReview(review.id, false);
+    }
+
+    res.json({ success: true, reviews });
+  } catch (err) {
+    console.error("Error fetching reviews:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// GET reviews for episode with all replies and user info
+router.get("/review/episode/:episodeId", async (req, res) => {
+  const { episodeId } = req.params;
+
+  try {
+    const reviewsQuery = `
+      SELECT r.*, u.username, u.profile_picture
+      FROM review r
+      JOIN users u ON u.id = r.user_id
+      WHERE r.episode_id = $1 AND r.is_removed = false
+      ORDER BY r.created_at DESC
+    `;
+    
+    const reviewsResult = await pool.query(reviewsQuery, [episodeId]);
+    const reviews = reviewsResult.rows;
+
+    // Get attachments and replies for each review
+    for (let review of reviews) {
+      const attachmentsQuery = "SELECT attachment FROM post_attachments WHERE post_id = $1";
+      const attachmentsResult = await pool.query(attachmentsQuery, [review.id]);
+      review.attachments = attachmentsResult.rows.map(row => row.attachment);
+
+      // Fetch nested replies
+      review.replies = await fetchRepliesForReview(review.id, false);
+    }
+
+    res.json({ success: true, reviews });
+  } catch (err) {
+    console.error("Error fetching reviews:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// POST create new review
+router.post("/review/create", async (req, res) => {
+  const { userId, mediaId, seasonId, episodeId, starPoint, description, attachments } = req.body;
+
+  try {
+    if (!userId || !description) {
+      return res.json({ success: false, error: "User ID and description are required" });
+    }
+
+    // Ensure exactly one of mediaId, seasonId, episodeId is provided
+    const providedCount = [mediaId, seasonId, episodeId].filter(v => v != null).length;
+    if (providedCount !== 1) {
+      return res.json({ success: false, error: "Exactly one of media_id, season_id, or episode_id is required" });
+    }
+
+    const reviewResult = await pool.query(
+      `INSERT INTO review (user_id, media_id, season_id, episode_id, star_point, description)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [userId, mediaId || null, seasonId || null, episodeId || null, starPoint || null, description]
+    );
+
+    const review = reviewResult.rows[0];
+
+    // Add attachments if provided
+    if (attachments && attachments.length > 0) {
+      for (let attachment of attachments) {
+        await pool.query(
+          "INSERT INTO post_attachments (post_id, attachment) VALUES ($1, $2)",
+          [review.id, attachment]
+        );
+      }
+    }
+
+    // Fetch user info
+    const userResult = await pool.query("SELECT username, profile_picture FROM users WHERE id = $1", [userId]);
+    review.user = userResult.rows[0];
+    review.attachments = attachments || [];
+    review.replies = [];
+
+    res.json({ success: true, review });
+  } catch (err) {
+    console.error("Error creating review:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// POST create new reply
+router.post("/reply/create", async (req, res) => {
+  const { userId, parentReviewId, parentReplyId, description, attachments } = req.body;
+
+  try {
+    if (!userId || !description) {
+      return res.json({ success: false, error: "User ID and description are required" });
+    }
+
+    // Ensure exactly one of parentReviewId or parentReplyId is provided
+    if (!parentReviewId && !parentReplyId) {
+      return res.json({ success: false, error: "Either parent_review_id or parent_reply_id is required" });
+    }
+
+    if (parentReviewId && parentReplyId) {
+      return res.json({ success: false, error: "Cannot provide both parent_review_id and parent_reply_id" });
+    }
+
+    const replyResult = await pool.query(
+      `INSERT INTO reply (user_id, parent_review_id, parent_reply_id, description)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [userId, parentReviewId || null, parentReplyId || null, description]
+    );
+
+    const reply = replyResult.rows[0];
+
+    // Add attachments if provided
+    if (attachments && attachments.length > 0) {
+      for (let attachment of attachments) {
+        await pool.query(
+          "INSERT INTO reply_attachments (reply_id, attachment) VALUES ($1, $2)",
+          [reply.id, attachment]
+        );
+      }
+    }
+
+    // Fetch user info
+    const userResult = await pool.query("SELECT username, profile_picture FROM users WHERE id = $1", [userId]);
+    reply.user = userResult.rows[0];
+    reply.attachments = attachments || [];
+    reply.replies = [];
+
+    res.json({ success: true, reply });
+  } catch (err) {
+    console.error("Error creating reply:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// PUT update review upvote/downvote
+router.put("/review/vote/:reviewId", async (req, res) => {
+  const { reviewId } = req.params;
+  const { voteType } = req.body;
+
+  try {
+    if (!["upvote", "downvote"].includes(voteType)) {
+      return res.json({ success: false, error: "Vote type must be 'upvote' or 'downvote'" });
+    }
+
+    let updateQuery;
+    if (voteType === "upvote") {
+      updateQuery = "UPDATE review SET upvote = upvote + 1 WHERE id = $1 RETURNING *";
+    } else {
+      updateQuery = "UPDATE review SET downvote = downvote + 1 WHERE id = $1 RETURNING *";
+    }
+
+    const result = await pool.query(updateQuery, [reviewId]);
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Review not found" });
+    }
+
+    res.json({ success: true, review: result.rows[0] });
+  } catch (err) {
+    console.error("Error updating review vote:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// PUT update reply upvote/downvote
+router.put("/reply/vote/:replyId", async (req, res) => {
+  const { replyId } = req.params;
+  const { voteType } = req.body;
+
+  try {
+    if (!["upvote", "downvote"].includes(voteType)) {
+      return res.json({ success: false, error: "Vote type must be 'upvote' or 'downvote'" });
+    }
+
+    let updateQuery;
+    if (voteType === "upvote") {
+      updateQuery = "UPDATE reply SET upvote = upvote + 1 WHERE id = $1 RETURNING *";
+    } else {
+      updateQuery = "UPDATE reply SET downvote = downvote + 1 WHERE id = $1 RETURNING *";
+    }
+
+    const result = await pool.query(updateQuery, [replyId]);
+
+    if (result.rows.length === 0) {
+      return res.json({ success: false, error: "Reply not found" });
+    }
+
+    res.json({ success: true, reply: result.rows[0] });
+  } catch (err) {
+    console.error("Error updating reply vote:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// DELETE review
+router.delete("/review/:reviewId", async (req, res) => {
+  const { reviewId } = req.params;
+  const { userId } = req.body;
+
+  try {
+    // Verify user owns the review or is admin
+    const reviewResult = await pool.query("SELECT * FROM review WHERE id = $1", [reviewId]);
+
+    if (reviewResult.rows.length === 0) {
+      return res.json({ success: false, error: "Review not found" });
+    }
+
+    const review = reviewResult.rows[0];
+
+    if (review.user_id !== parseInt(userId)) {
+      return res.json({ success: false, error: "Unauthorized" });
+    }
+
+    const deleteResult = await pool.query(
+      "DELETE FROM review WHERE id = $1 RETURNING *",
+      [reviewId]
+    );
+
+    res.json({ success: true, message: "Review deleted" });
+  } catch (err) {
+    console.error("Error deleting review:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
+// DELETE reply
+router.delete("/reply/:replyId", async (req, res) => {
+  const { replyId } = req.params;
+  const { userId } = req.body;
+
+  try {
+    // Verify user owns the reply or is admin
+    const replyResult = await pool.query("SELECT * FROM reply WHERE id = $1", [replyId]);
+
+    if (replyResult.rows.length === 0) {
+      return res.json({ success: false, error: "Reply not found" });
+    }
+
+    const reply = replyResult.rows[0];
+
+    if (reply.user_id !== parseInt(userId)) {
+      return res.json({ success: false, error: "Unauthorized" });
+    }
+
+    const deleteResult = await pool.query(
+      "DELETE FROM reply WHERE id = $1 RETURNING *",
+      [replyId]
+    );
+
+    res.json({ success: true, message: "Reply deleted" });
+  } catch (err) {
+    console.error("Error deleting reply:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
 module.exports = router;

@@ -4,6 +4,7 @@ import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
 import AwardCard from "../components/AwardCard";
 import SeasonCard from "../components/SeasonCard";
+import CommentThread from "../components/CommentThread";
 import { authenticatedFetch, getUser, getInAdminMode } from "../utils/auth";
 
 const MediaPage = () => {
@@ -869,9 +870,10 @@ const MediaPage = () => {
           )}
 
           <h3 style={pageStyles.sectionTitle}>Reviews</h3>
-          <p style={{ color: "#a0aec0", textAlign: "center", padding: "20px" }}>
-            No reviews yet — coming soon.
-          </p>
+          <CommentThread 
+            mediaId={parseInt(id)} 
+            currentUserId={userId}
+          />
 
           {/* Add Director Modal */}
           {showAddDirectorModal && (
