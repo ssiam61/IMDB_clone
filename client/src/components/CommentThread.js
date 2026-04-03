@@ -21,11 +21,11 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId }) => {
     try {
       let endpoint = "";
       if (mediaId) {
-        endpoint = `${API_BASE_URL}/review/media/${mediaId}`;
+        endpoint = `${API_BASE_URL}/review/media/${mediaId}?userId=${currentUserId}`;
       } else if (seasonId) {
-        endpoint = `${API_BASE_URL}/review/season/${seasonId}`;
+        endpoint = `${API_BASE_URL}/review/season/${seasonId}?userId=${currentUserId}`;
       } else if (episodeId) {
-        endpoint = `${API_BASE_URL}/review/episode/${episodeId}`;
+        endpoint = `${API_BASE_URL}/review/episode/${episodeId}?userId=${currentUserId}`;
       } else {
         setError("No media, season, or episode ID provided");
         setLoading(false);
@@ -171,28 +171,41 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId }) => {
   const handleVote = async (itemId, voteType, isReply = false) => {
     try {
       // Helper to find item recursively
-      const findItem = (items, targetId) => {
+      const findItem = (items, targetId, isTarget) => {
         for (let item of items) {
-          if (item.id === targetId) return item;
-          if (item.replies) {
-            const found = findItem(item.replies, targetId);
+          // Check if this item matches: correct ID and correct type
+          const itemIsReply = item.type === 'reply';
+          if (item.id === targetId && itemIsReply === isTarget) {
+            return item;
+          }
+          // Recursively search nested replies
+          if (item.replies && item.replies.length > 0) {
+            const found = findItem(item.replies, targetId, isTarget);
             if (found) return found;
           }
         }
         return null;
       };
 
-      const item = findItem(reviews, itemId);
-      if (!item) return;
+      const item = findItem(reviews, itemId, isReply);
+      if (!item) {
+        console.warn(`Item not found: ${isReply ? 'reply' : 'review'} id=${itemId}`);
+        return;
+      }
 
       let voteToSend = voteType;
       if (item.userVote === voteType) voteToSend = "remove";
 
       // Update UI optimistically
-      const updateReviewsRecursive = (items, targetId, updated, isRep) => {
+      const updateReviewsRecursive = (items, targetId, updated, isTarget) => {
         return items.map((r) => {
-          if (!isRep && r.id === targetId) return updated;
-          if (r.replies) return { ...r, replies: updateReviewsRecursive(r.replies, targetId, updated, true) };
+          const itemIsReply = r.type === 'reply';
+          if (r.id === targetId && itemIsReply === isTarget) {
+            return updated;
+          }
+          if (r.replies && r.replies.length > 0) {
+            return { ...r, replies: updateReviewsRecursive(r.replies, targetId, updated, isTarget) };
+          }
           return r;
         });
       };

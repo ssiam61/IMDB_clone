@@ -1081,6 +1081,7 @@ const fetchRepliesForReview = async (reviewOrReplyId, isParentReply = false, use
 
     // Get attachments for each reply
     for (let reply of replies) {
+      reply.type = 'reply'; // Add type to distinguish from reviews
       const attachmentsQuery = "SELECT attachment FROM reply_attachments WHERE reply_id = $1";
       const attachmentsResult = await pool.query(attachmentsQuery, [reply.id]);
       reply.attachments = attachmentsResult.rows.map(row => row.attachment);
@@ -1124,6 +1125,7 @@ router.get("/review/media/:mediaId", async (req, res) => {
 
     // Get attachments and replies for each review
     for (let review of reviews) {
+      review.type = 'review'; // Add type to distinguish from replies
       const attachmentsQuery = "SELECT attachment FROM post_attachments WHERE post_id = $1";
       const attachmentsResult = await pool.query(attachmentsQuery, [review.id]);
       review.attachments = attachmentsResult.rows.map(row => row.attachment);
