@@ -12,6 +12,11 @@ const ReplyComposer = ({ onSubmit, onCancel, placeholder = "Write a reply..." })
       alert("Please enter a valid image URL");
       return;
     }
+
+    if (attachmentUrls.length >= 4) {
+      alert("Maximum 4 images allowed");
+      return;
+    }
     
     try {
       new URL(imageUrlInput);
@@ -83,20 +88,16 @@ const ReplyComposer = ({ onSubmit, onCancel, placeholder = "Write a reply..." })
         </div>
 
         {attachmentUrls.length > 0 && (
-          <div className="reply-attachment-list">
+          <div className="reply-attachment-grid">
             {attachmentUrls.map((url, index) => (
-              <div key={index} className="reply-attachment-item">
+              <div key={index} className="reply-attachment-preview">
                 <img
                   src={url}
                   alt={`Attachment ${index + 1}`}
-                  className="reply-attachment-thumb"
                   onError={(e) => {
-                    e.target.src = "https://via.placeholder.com/50?text=Error";
+                    e.target.src = "https://via.placeholder.com/120?text=Error";
                   }}
                 />
-                <span className="reply-attachment-url" title={url}>
-                  {url.length > 40 ? url.substring(0, 40) + "..." : url}
-                </span>
                 <button
                   className="remove-reply-attachment-btn"
                   onClick={() => removeAttachment(index)}
@@ -117,7 +118,7 @@ const ReplyComposer = ({ onSubmit, onCancel, placeholder = "Write a reply..." })
           onClick={handleSubmit}
           disabled={submitting || !description.trim()}
         >
-          {submitting ? "Posting..." : "Post Reply"}
+          {submitting ? "Submitting..." : "Submit"}
         </button>
         <button
           className="cancel-reply-btn"

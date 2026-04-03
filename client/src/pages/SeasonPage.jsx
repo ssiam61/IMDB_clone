@@ -12,9 +12,6 @@ const SeasonPage = () => {
   const [episodes, setEpisodes] = useState([]);
   const [allSeasons, setAllSeasons] = useState([]);
   const [thisIndex, setThisIndex] = useState(null);
-  const [reviewText, setReviewText] = useState("");
-  const [reviewStars, setReviewStars] = useState(0);
-  const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [inAdminMode, setInAdminMode] = useState(getInAdminMode());
   const [showAddEpisodeModal, setShowAddEpisodeModal] = useState(false);
   const [addEpisodeForm, setAddEpisodeForm] = useState({
@@ -441,110 +438,7 @@ const SeasonPage = () => {
             </>
           )}
 
-          <h3 style={pageStyles.sectionTitle}>Leave a Review</h3>
-
-          {!reviewSubmitted ? (
-            <div style={{
-              ...pageStyles.infoCard,
-              marginTop: "24px",
-              marginBottom: "40px",
-            }}>
-              <div style={{ marginBottom: "24px" }}>
-                <label style={{...pageStyles.infoLabel, marginBottom: "12px", display: "block"}}>
-                  Star Rating
-                </label>
-                <select
-                  value={reviewStars}
-                  onChange={(e) => setReviewStars(parseInt(e.target.value))}
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 90, 126, 0.2)",
-                    background: "rgba(10, 14, 39, 0.8)",
-                    color: "#e0e7ff",
-                    fontSize: "1rem",
-                    cursor: "pointer",
-                    transition: "border-color 0.3s ease",
-                  }}
-                >
-                  <option value="0">Select Rating...</option>
-                  {[1,2,3,4,5,6,7,8,9,10].map((n) => (
-                    <option key={n} value={n}>{n} Star{n > 1 ? "s" : ""}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ marginBottom: "24px" }}>
-                <label style={{...pageStyles.infoLabel, marginBottom: "12px", display: "block"}}>
-                  Your Review
-                </label>
-                <textarea
-                  rows="4"
-                  value={reviewText}
-                  onChange={(e) => setReviewText(e.target.value)}
-                  placeholder="Share your thoughts about this season..."
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255, 90, 126, 0.2)",
-                    background: "rgba(10, 14, 39, 0.8)",
-                    color: "#e0e7ff",
-                    fontSize: "1rem",
-                    fontFamily: "inherit",
-                    resize: "vertical",
-                    transition: "border-color 0.3s ease",
-                  }}
-                ></textarea>
-              </div>
-
-              <button
-                onClick={() => setReviewSubmitted(true)}
-                disabled={reviewStars === 0 || reviewText.trim() === ""}
-                style={{
-                  padding: "12px 32px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background: "linear-gradient(135deg, #ff5a7e, #a855f7)",
-                  color: "#fff",
-                  fontSize: "1rem",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  transition: "transform 0.3s ease, box-shadow 0.3s ease",
-                  boxShadow: "0 4px 15px rgba(255, 90, 126, 0.3)",
-                  opacity: (reviewStars === 0 || reviewText.trim() === "") ? "0.5" : "1",
-                }}
-                onMouseEnter={(e) => {
-                  if (reviewStars !== 0 && reviewText.trim() !== "") {
-                    e.target.style.transform = "translateY(-2px)";
-                    e.target.style.boxShadow = "0 6px 20px rgba(255, 90, 126, 0.4)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = "translateY(0)";
-                  e.target.style.boxShadow = "0 4px 15px rgba(255, 90, 126, 0.3)";
-                }}
-              >
-                Submit Review
-              </button>
-            </div>
-          ) : (
-            <div style={{
-              padding: "20px",
-              borderRadius: "8px",
-              background: "linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(74, 222, 128, 0.05))",
-              border: "1px solid rgba(74, 222, 128, 0.3)",
-              marginTop: "24px",
-              marginBottom: "40px",
-            }}>
-              <p style={{ color: "#4ade80", fontSize: "1.1rem", margin: "0" }}>
-                ✅ Review submitted successfully!
-              </p>
-            </div>
-          )}
-
-          <h3 style={pageStyles.sectionTitle}>Reviews</h3>
+          <h3 style={pageStyles.sectionTitle}>Reviews & Comments</h3>
           <CommentThread 
             seasonId={parseInt(id)} 
             currentUserId={userId}

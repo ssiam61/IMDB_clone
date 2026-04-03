@@ -18,6 +18,11 @@ const ReviewComposer = ({ onSubmit, onCancel, currentUserId }) => {
       alert("Please enter a valid image URL");
       return;
     }
+
+    if (attachmentUrls.length >= 4) {
+      alert("Maximum 4 images allowed");
+      return;
+    }
     
     // Basic URL validation
     try {
@@ -121,31 +126,25 @@ const ReviewComposer = ({ onSubmit, onCancel, currentUserId }) => {
 
       {attachmentUrls.length > 0 && (
         <div className="attachment-previews">
-          <div className="attachment-list">
-            {attachmentUrls.map((url, index) => (
-              <div key={index} className="attachment-item">
-                <img 
-                  src={url} 
-                  alt={`Attachment ${index + 1}`}
-                  className="attachment-thumb"
-                  onError={(e) => {
-                    e.target.src = "https://via.placeholder.com/60?text=Image+Error";
-                  }}
-                />
-                <span className="attachment-url" title={url}>
-                  {url.length > 50 ? url.substring(0, 50) + "..." : url}
-                </span>
-                <button
-                  className="remove-attachment-btn"
-                  onClick={() => removeAttachment(index)}
-                  title="Remove image"
-                  disabled={submitting}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
+          {attachmentUrls.map((url, index) => (
+            <div key={index} className="attachment-preview">
+              <img 
+                src={url} 
+                alt={`Attachment ${index + 1}`}
+                onError={(e) => {
+                  e.target.src = "https://via.placeholder.com/150?text=Error";
+                }}
+              />
+              <button
+                className="remove-attachment-btn"
+                onClick={() => removeAttachment(index)}
+                title="Remove image"
+                disabled={submitting}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
