@@ -170,24 +170,24 @@ export default function ProfilePage() {
             {reviews.map((review, index) => (
               <div
                 key={review.id}
-                className="glass-card p-6 hover-glow transition-all duration-300 animate-in fade-in"
+                className="glass-card p-6 hover-glow transition-all duration-300 animate-in fade-in cursor-pointer group"
                 style={{ animationDelay: `${index * 50}ms` }}
+                onClick={() => navigate(`/media/${review.media_id}`)}
               >
                 <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-xl font-bold text-white hover:text-[#E94560] transition-colors">
-                      {review.movieTitle || 'Movie'}
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-white group-hover:text-[#E94560] transition-colors">
+                      {review.media_name || 'Unknown Media'}
                     </h3>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-[#F5C518] font-bold text-lg">
-                        ⭐ {review.rating || 0}/10
+                        ⭐ {review.star_point || 0}/10
                       </span>
-                      <span className="badge">{Math.floor(Math.random() * 100) + 1} helpful</span>
                     </div>
                   </div>
                   <p className="text-[#A8A8B3] text-sm whitespace-nowrap ml-4">
-                    {review.createdAt
-                      ? new Date(review.createdAt).toLocaleDateString('en-US', {
+                    {review.created_at
+                      ? new Date(review.created_at).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric',
@@ -195,7 +195,12 @@ export default function ProfilePage() {
                       : 'Recently'}
                   </p>
                 </div>
-                <p className="text-[#EAEAEA] leading-relaxed">{review.comment || review.text || 'No comment'}</p>
+                <p className="text-[#EAEAEA] leading-relaxed line-clamp-3">
+                  {review.description}
+                </p>
+                <p className="text-[#A8A8B3] text-xs mt-3 group-hover:text-[#E94560] transition-colors">
+                  Click to view media →
+                </p>
               </div>
             ))}
           </div>

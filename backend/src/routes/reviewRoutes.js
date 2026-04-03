@@ -1,5 +1,5 @@
 import express from "express";
-import { addReviewController, getReviewsByMediaIdController, voteReviewController } from "../controllers/reviewController.js";
+import { addReviewController, getReviewsByMediaIdController, voteReviewController, addReplyController } from "../controllers/reviewController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -9,8 +9,10 @@ router.post("/", authMiddleware, addReviewController);
 // Public GET
 router.get("/media/:id", getReviewsByMediaIdController);
 
-
 // Voting on a review (protected)
 router.post("/:id/vote", authMiddleware, voteReviewController);
+
+// Add reply (protected)
+router.post("/reply", authMiddleware, addReplyController);
 
 export default router;
