@@ -3,8 +3,10 @@ import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
 import CategoryRow from "../components/CategoryRow";
 import { authenticatedFetch, getUser } from "../utils/auth";
+import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [watchlist, setWatchlist] = useState([]);
   const [favoriteActors, setFavoriteActors] = useState([]);
@@ -26,7 +28,8 @@ const Profile = () => {
   const [addActorForm, setAddActorForm] = useState({ person_id: "", name: "" });
   const [addDirectorForm, setAddDirectorForm] = useState({ person_id: "", name: "" });
   const [addingItem, setAddingItem] = useState(false);
-
+  const [userReviews, setUserReviews] = useState([]);
+  const [userReplies, setUserReplies] = useState([]);
   const storedUser = getUser();
   const userId = storedUser?.id;
 
@@ -34,7 +37,16 @@ const Profile = () => {
     const loadProfile = async () => {
       try {
         const res = await authenticatedFetch(`http://localhost:5000/api/profile/${userId}`);
-        const data = await res.json();
+        const activityRes = await authenticatedFetch(
+          `http://localhost:5000/api/profile/activity/${userId}`
+        );
+        const activityData = await activityRes.json();
+
+        if (activityData.success) {
+          setUserReviews(activityData.reviews);
+          setUserReplies(activityData.replies);
+        }
+                const data = await res.json();
 
         if (data.success) {
           setUser(data.user);
@@ -61,6 +73,26 @@ const Profile = () => {
       loadProfile();
     }
   }, [userId]);
+
+  const navigateToReview = (review) => {
+    if (review.media_id) {
+      navigate(`/media/${review.media_id}#review-${review.id}`);
+    } else if (review.season_id) {
+      navigate(`/season/${review.season_id}#review-${review.id}`);
+    } else if (review.episode_id) {
+      navigate(`/episode/${review.episode_id}#review-${review.id}`);
+    }
+  };
+
+  const navigateToReply = (reply) => {
+    if (reply.media_id) {
+      navigate(`/media/${reply.media_id}#reply-${reply.id}`);
+    } else if (reply.season_id) {
+      navigate(`/season/${reply.season_id}#reply-${reply.id}`);
+    } else if (reply.episode_id) {
+      navigate(`/episode/${reply.episode_id}#reply-${reply.id}`);
+    }
+  };
 
   const handleEditClick = () => {
     setError("");
@@ -652,27 +684,104 @@ const Profile = () => {
 
           <div
             style={{
-              background: "linear-gradient(135deg, rgba(26, 39, 73, 0.8) 0%, rgba(15, 40, 71, 0.8) 100%)",
+              background: "linear-gradient(135deg, rgba(26, 39, 73, 0.8), rgba(15, 40, 71, 0.8))",
               border: "1px solid rgba(255, 90, 126, 0.2)",
               borderRadius: "16px",
-              padding: "60px 40px",
-              textAlign: "center",
+              padding: "32px",
               backdropFilter: "blur(10px)",
               minHeight: "200px",
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              flexDirection: "column",
+              gap: "16px",
             }}
           >
-            <p
-              style={{
-                color: "#b0b8d4",
-                fontSize: "16px",
-                margin: "0",
-              }}
-            >
-              No {activeTab} yet — coming soon.
-            </p>
+            {activeTab === "reviews" && (
+              userReviews.length > 0 ? (
+                userReviews.map((review) => (
+              <div
+                key={review.id}
+                onClick={() => navigateToReview(review)}
+                style={{
+                  cursor: "pointer",
+                  padding: "20px",
+                  borderRadius: "14px",
+                  background: "rgba(255, 255, 255, 0.06)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  transition: "background 0.2s ease, transform 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                <p style={{ color: "#ffffff", marginBottom: "8px", lineHeight: "1.6" }}>
+                  {review.description}
+                </p>
+
+                {review.star_point && (
+                  <p style={{ color: "#ffdd57", fontSize: "13px", marginBottom: "6px" }}>
+                    {"★".repeat(review.star_point)} {review.star_point}/10
+                  </p>
+                )}
+
+                <small style={{ color: "#b0b8d4" }}>
+                  Review on {review.media_name}
+                </small>
+              </div>
+
+                ))
+              ) : (
+                <p style={{ color: "#b0b8d4" }}>No reviews yet.</p>
+              )
+            )}
+
+            {activeTab === "replies" && (
+              userReplies.length > 0 ? (
+                userReplies.map((reply) => (
+              <div
+                key={reply.id}
+                onClick={() => navigateToReply(reply)}
+                style={{
+                  cursor: "pointer",
+                  padding: "20px",
+                  borderRadius: "14px",
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  transition: "background 0.2s ease, transform 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                <p style={{ color: "#ffffff", marginBottom: "8px", lineHeight: "1.6" }}>
+                  {reply.description}
+                </p>
+
+                <small style={{ color: "#b0b8d4" }}>
+                  Reply on {reply.media_name}
+                </small>
+              </div>
+                ))
+              ) : (
+                <p style={{ color: "#b0b8d4" }}>No replies yet.</p>
+              )
+            )}
+
+            {activeTab === "posts" && (
+              <p style={{ color: "#b0b8d4" }}>
+                Posts are not implemented yet.
+              </p>
+            )}
+
           </div>
         </div>
 

@@ -1589,4 +1589,92 @@ router.delete("/reply/:replyId", async (req, res) => {
   }
 });
 
+// GET user activity (reviews & replies) for profile
+router.get("/profile/activity/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    // ================= REVIEWS BY USER =================
+    const reviewsResult = await pool.query(
+      `
+      SELECT
+        r.id,
+        r.description,
+        r.star_point,
+        r.created_at,
+        r.media_id,
+        r.season_id,
+        r.episode_id,
+        m.name AS media_name
+      FROM review r
+      LEFT JOIN media m ON m.id = r.media_id
+      WHERE r.user_id = $1
+        AND r.is_removed = false
+      ORDER BY r.created_at DESC
+      `,
+      [userId]
+    );
+
+    const reviews = reviewsResult.rows.map(r => ({
+      ...r,
+      type: "review"
+    }));
+
+    // ================= REPLIES BY USER (INCLUDING REPLY-TO-REPLY) =================
+    const repliesResult = await pool.query(
+      `
+      SELECT
+        rp.id,
+        rp.description,
+        rp.created_at,
+
+        -- Resolve the owning review
+        COALESCE(rv.id, rv_parent.id) AS parent_review_id,
+
+        -- Resolve media context
+        COALESCE(rv.media_id, rv_parent.media_id)   AS media_id,
+        COALESCE(rv.season_id, rv_parent.season_id) AS season_id,
+        COALESCE(rv.episode_id, rv_parent.episode_id) AS episode_id,
+
+        m.name AS media_name
+      FROM reply rp
+
+      -- Case 1: reply → review
+      LEFT JOIN review rv
+        ON rv.id = rp.parent_review_id
+
+      -- Case 2: reply → reply → review
+      LEFT JOIN reply parent_rp
+        ON parent_rp.id = rp.parent_reply_id
+
+      LEFT JOIN review rv_parent
+        ON rv_parent.id = parent_rp.parent_review_id
+
+      LEFT JOIN media m
+        ON m.id = COALESCE(rv.media_id, rv_parent.media_id)
+
+      WHERE rp.user_id = $1
+        AND rp.is_removed = false
+
+      ORDER BY rp.created_at DESC
+      `,
+      [userId]
+    );
+
+    const replies = repliesResult.rows.map(rp => ({
+      ...rp,
+      type: "reply"
+    }));
+
+    res.json({
+      success: true,
+      reviews,
+      replies
+    });
+  } catch (err) {
+    console.error("Error fetching profile activity:", err);
+    res.json({ success: false, error: "Server error" });
+  }
+});
+
 module.exports = router;
