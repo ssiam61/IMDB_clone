@@ -1526,7 +1526,7 @@ router.put("/reply/vote/:replyId", async (req, res) => {
 // DELETE review
 router.delete("/review/:reviewId", async (req, res) => {
   const { reviewId } = req.params;
-  const { userId } = req.body;
+  const { userId, isAdmin } = req.body;
 
   try {
     // Verify user owns the review or is admin
@@ -1538,10 +1538,12 @@ router.delete("/review/:reviewId", async (req, res) => {
 
     const review = reviewResult.rows[0];
 
-    if (review.user_id !== parseInt(userId)) {
+    // Allow delete if user owns review OR is admin
+    if (review.user_id !== parseInt(userId) && !isAdmin) {
       return res.json({ success: false, error: "Unauthorized" });
     }
 
+    // Delete review cascades to replies via database constraint
     const deleteResult = await pool.query(
       "DELETE FROM review WHERE id = $1 RETURNING *",
       [reviewId]
@@ -1557,7 +1559,7 @@ router.delete("/review/:reviewId", async (req, res) => {
 // DELETE reply
 router.delete("/reply/:replyId", async (req, res) => {
   const { replyId } = req.params;
-  const { userId } = req.body;
+  const { userId, isAdmin } = req.body;
 
   try {
     // Verify user owns the reply or is admin
@@ -1569,10 +1571,12 @@ router.delete("/reply/:replyId", async (req, res) => {
 
     const reply = replyResult.rows[0];
 
-    if (reply.user_id !== parseInt(userId)) {
+    // Allow delete if user owns reply OR is admin
+    if (reply.user_id !== parseInt(userId) && !isAdmin) {
       return res.json({ success: false, error: "Unauthorized" });
     }
 
+    // Delete reply cascades to nested replies via database constraint
     const deleteResult = await pool.query(
       "DELETE FROM reply WHERE id = $1 RETURNING *",
       [replyId]

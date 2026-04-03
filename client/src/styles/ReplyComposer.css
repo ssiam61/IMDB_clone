@@ -153,24 +153,24 @@
 .reply-composer-actions {
   display: flex;
   gap: 8px;
+  justify-content: flex-end;
 }
 
 .submit-reply-btn {
-  flex: 1;
-  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
   border: none;
   color: white;
-  padding: 8px 12px;
+  padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   transition: all 0.2s;
 }
 
 .submit-reply-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(74, 222, 128, 0.3);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
 }
 
 .submit-reply-btn:disabled {
@@ -179,19 +179,18 @@
 }
 
 .cancel-reply-btn {
-  background: rgba(168, 85, 247, 0.2);
-  border: 1px solid #a855f7;
-  color: #a855f7;
-  padding: 8px 12px;
-  border-radius: 4px;
+  background: transparent;
+  border: 1px solid #6b7280;
+  color: #d0d8e8;
+  padding: 8px 16px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
   transition: all 0.2s;
 }
 
 .cancel-reply-btn:hover:not(:disabled) {
-  background: rgba(168, 85, 247, 0.3);
+  border-color: #d0d8e8;
 }
 
 .cancel-reply-btn:disabled {

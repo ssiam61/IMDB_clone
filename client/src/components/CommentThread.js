@@ -5,7 +5,7 @@ import "../styles/CommentThread.css";
 
 const API_BASE_URL = "http://localhost:5000/api";
 
-const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId }) => {
+const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId, inAdminMode }) => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -128,7 +128,7 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId }) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("authToken")}`,
         },
-        body: JSON.stringify({ userId: currentUserId }),
+        body: JSON.stringify({ userId: currentUserId, isAdmin: inAdminMode }),
       });
 
       const data = await response.json();
@@ -145,6 +145,7 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId }) => {
   };
 
   const handleDeleteReply = async (replyId) => {
+    console.log("handleDeleteReply called with replyId:", replyId, "userId:", currentUserId, "isAdmin:", inAdminMode);
     try {
       const response = await fetch(`${API_BASE_URL}/reply/${replyId}`, {
         method: "DELETE",
@@ -152,10 +153,11 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId }) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("authToken")}`,
         },
-        body: JSON.stringify({ userId: currentUserId }),
+        body: JSON.stringify({ userId: currentUserId, isAdmin: inAdminMode }),
       });
 
       const data = await response.json();
+      console.log("Delete response:", data);
 
       if (data.success) {
         await fetchReviews();
@@ -308,6 +310,7 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId }) => {
                 onDelete={handleDeleteReview}
                 onVote={handleVote}
                 currentUserId={currentUserId}
+                inAdminMode={inAdminMode}
               />
             ))
           )}

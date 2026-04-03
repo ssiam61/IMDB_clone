@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "../styles/ReviewCard.css";
 import ReplyComposer from "./ReplyComposer";
 
-const ReviewCard = ({ review, onReply, onDelete, onVote, currentUserId }) => {
+const ReviewCard = ({ review, onReply, onDelete, onVote, currentUserId, inAdminMode }) => {
   const [showReplyComposer, setShowReplyComposer] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
 
@@ -45,11 +45,11 @@ const ReviewCard = ({ review, onReply, onDelete, onVote, currentUserId }) => {
             <span className="review-time">{formatDate(review.created_at)}</span>
           </div>
         </div>
-        {isOwnReview && (
+        {(isOwnReview || inAdminMode) && (
           <button 
             className="review-delete-btn"
             onClick={handleDeleteClick}
-            title="Delete review"
+            title={isOwnReview ? "Delete review" : "Delete review (Admin)"}
           >
             ✕
           </button>
@@ -131,6 +131,7 @@ const ReviewCard = ({ review, onReply, onDelete, onVote, currentUserId }) => {
               onDelete={onDelete}
               onVote={onVote}
               currentUserId={currentUserId}
+              inAdminMode={inAdminMode}
               depth={0}
             />
           )}
@@ -140,7 +141,7 @@ const ReviewCard = ({ review, onReply, onDelete, onVote, currentUserId }) => {
   );
 };
 
-const ReplyThread = ({ replies, parentReviewId, onReply, onDelete, onVote, currentUserId, depth }) => {
+const ReplyThread = ({ replies, parentReviewId, onReply, onDelete, onVote, currentUserId, inAdminMode, depth }) => {
   return (
     <div className="reply-thread" style={{ marginLeft: `${depth * 24}px` }}>
       {replies.map((reply) => (
@@ -152,6 +153,7 @@ const ReplyThread = ({ replies, parentReviewId, onReply, onDelete, onVote, curre
           onDelete={onDelete}
           onVote={onVote}
           currentUserId={currentUserId}
+          inAdminMode={inAdminMode}
           depth={depth}
         />
       ))}
@@ -159,7 +161,7 @@ const ReplyThread = ({ replies, parentReviewId, onReply, onDelete, onVote, curre
   );
 };
 
-const ReplyCard = ({ reply, parentReviewId, onReply, onDelete, onVote, currentUserId, depth }) => {
+const ReplyCard = ({ reply, parentReviewId, onReply, onDelete, onVote, currentUserId, inAdminMode, depth }) => {
   const [showReplyComposer, setShowReplyComposer] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
 
@@ -177,7 +179,9 @@ const ReplyCard = ({ reply, parentReviewId, onReply, onDelete, onVote, currentUs
   };
 
   const handleDeleteClick = () => {
+    console.log("Delete clicked for reply:", reply.id, "User:", currentUserId, "Reply user:", reply.user_id, "isAdmin:", inAdminMode);
     if (window.confirm("Are you sure you want to delete this reply?")) {
+      console.log("Confirmed delete, calling onDelete");
       onDelete(reply.id);
     }
   };
@@ -202,11 +206,11 @@ const ReplyCard = ({ reply, parentReviewId, onReply, onDelete, onVote, currentUs
             <span className="reply-time">{formatDate(reply.created_at)}</span>
           </div>
         </div>
-        {isOwnReply && (
+        {(isOwnReply || inAdminMode) && (
           <button 
             className="reply-delete-btn"
             onClick={handleDeleteClick}
-            title="Delete reply"
+            title={isOwnReply ? "Delete reply" : "Delete reply (Admin)"}
           >
             ✕
           </button>
@@ -282,6 +286,7 @@ const ReplyCard = ({ reply, parentReviewId, onReply, onDelete, onVote, currentUs
               onDelete={onDelete}
               onVote={onVote}
               currentUserId={currentUserId}
+              inAdminMode={inAdminMode}
               depth={depth + 1}
             />
           )}

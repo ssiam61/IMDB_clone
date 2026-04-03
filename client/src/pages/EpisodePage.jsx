@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import UserNavbar from "../components/UserNavbar";
 import CommentThread from "../components/CommentThread";
-import { getUser } from "../utils/auth";
+import { getUser, getInAdminMode } from "../utils/auth";
 
 const EpisodePage = () => {
   const { id } = useParams();
@@ -10,6 +10,7 @@ const EpisodePage = () => {
   const [episode, setEpisode] = useState(null);
   const [allEpisodes, setAllEpisodes] = useState([]);
   const [thisIndex, setThisIndex] = useState(null);
+  const [inAdminMode, setInAdminMode] = useState(getInAdminMode());
 
   const userId = getUser()?.id;
 
@@ -234,6 +235,7 @@ const EpisodePage = () => {
           <CommentThread 
             episodeId={parseInt(id)} 
             currentUserId={userId}
+            inAdminMode={inAdminMode}
           />
         </div>
       </div>

@@ -22,7 +22,6 @@
   font-size: 0.875rem;
 }
 
-/* Star Rating Section */
 .star-rating-section {
   margin-bottom: 16px;
 }
@@ -246,20 +245,20 @@
 }
 
 .submit-review-btn {
-  background: linear-gradient(135deg, #ff5a7e 0%, #ff1744 100%);
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
   border: none;
   color: white;
-  padding: 10px 24px;
+  padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
   transition: all 0.2s;
 }
 
 .submit-review-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 90, 126, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
 }
 
 .submit-review-btn:disabled {
@@ -271,9 +270,11 @@
   background: transparent;
   border: 1px solid #6b7280;
   color: #d0d8e8;
-  padding: 8px 20px;
+  padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
   font-weight: 600;
   font-size: 14px;
   transition: all 0.2s;

@@ -442,6 +442,7 @@ const SeasonPage = () => {
           <CommentThread 
             seasonId={parseInt(id)} 
             currentUserId={userId}
+            inAdminMode={inAdminMode}
           />
 
           {/* Add Episode Modal */}

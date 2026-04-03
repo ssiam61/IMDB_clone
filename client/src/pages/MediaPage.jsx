@@ -766,6 +766,7 @@ const MediaPage = () => {
           <CommentThread 
             mediaId={parseInt(id)} 
             currentUserId={userId}
+            inAdminMode={inAdminMode}
           />
 
           {/* Add Director Modal */}
