@@ -5,42 +5,34 @@ const ReviewComposer = ({ onSubmit, onCancel, currentUserId }) => {
   const [description, setDescription] = useState("");
   const [starPoint, setStarPoint] = useState(5);
   const [hoverStarPoint, setHoverStarPoint] = useState(0);
-  const [attachments, setAttachments] = useState([]);
-  const [attachmentPreviews, setAttachmentPreviews] = useState([]);
+  const [attachmentUrls, setAttachmentUrls] = useState([]);
+  const [imageUrlInput, setImageUrlInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleStarClick = (star) => {
     setStarPoint(star);
   };
 
-  const handleAttachmentSelect = (e) => {
-    const files = Array.from(e.target.files);
-    const newAttachments = [];
-    const newPreviews = [];
+  const addAttachmentUrl = () => {
+    if (!imageUrlInput.trim()) {
+      alert("Please enter a valid image URL");
+      return;
+    }
+    
+    // Basic URL validation
+    try {
+      new URL(imageUrlInput);
+    } catch {
+      alert("Please enter a valid URL (must start with http:// or https://)");
+      return;
+    }
 
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        newAttachments.push(event.target.result);
-        newPreviews.push({
-          id: Math.random(),
-          src: event.target.result,
-          name: file.name,
-        });
-        setAttachments([...attachments, ...newAttachments]);
-        setAttachmentPreviews([...attachmentPreviews, ...newPreviews]);
-      };
-      reader.readAsDataURL(file);
-    });
+    setAttachmentUrls([...attachmentUrls, imageUrlInput]);
+    setImageUrlInput("");
   };
 
-  const removeAttachment = (id) => {
-    setAttachmentPreviews(attachmentPreviews.filter((a) => a.id !== id));
-    const indexToRemove = attachmentPreviews.findIndex((a) => a.id === id);
-    if (indexToRemove !== -1) {
-      const newAttachments = attachments.filter((_, i) => i !== indexToRemove);
-      setAttachments(newAttachments);
-    }
+  const removeAttachment = (index) => {
+    setAttachmentUrls(attachmentUrls.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -51,11 +43,11 @@ const ReviewComposer = ({ onSubmit, onCancel, currentUserId }) => {
 
     setSubmitting(true);
     try {
-      await onSubmit(description, starPoint, attachmentPreviews.map((p) => p.src));
+      await onSubmit(description, starPoint, attachmentUrls);
       setDescription("");
       setStarPoint(5);
-      setAttachments([]);
-      setAttachmentPreviews([]);
+      setAttachmentUrls([]);
+      setImageUrlInput("");
     } catch (err) {
       console.error("Error submitting review:", err);
     } finally {
@@ -102,29 +94,50 @@ const ReviewComposer = ({ onSubmit, onCancel, currentUserId }) => {
       </div>
 
       <div className="attachments-section">
-        <label className="attachment-label">Add Images (Optional):</label>
+        <label className="attachment-label">Add Image Links (Optional):</label>
         <div className="attachment-input-group">
           <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleAttachmentSelect}
+            type="text"
+            placeholder="Paste image URL (e.g., https://example.com/image.jpg)"
+            value={imageUrlInput}
+            onChange={(e) => setImageUrlInput(e.target.value)}
             disabled={submitting}
-            id="attachment-input"
+            className="image-url-input"
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                addAttachmentUrl();
+              }
+            }}
           />
-          <label htmlFor="attachment-input" className="attachment-input-label">
-            Choose Images
-          </label>
+          <button
+            className="add-image-btn"
+            onClick={addAttachmentUrl}
+            disabled={submitting || !imageUrlInput.trim()}
+          >
+            Add Image
+          </button>
         </div>
+      </div>
 
-        {attachmentPreviews.length > 0 && (
-          <div className="attachment-previews">
-            {attachmentPreviews.map((preview) => (
-              <div key={preview.id} className="attachment-preview">
-                <img src={preview.src} alt={preview.name} />
+      {attachmentUrls.length > 0 && (
+        <div className="attachment-previews">
+          <div className="attachment-list">
+            {attachmentUrls.map((url, index) => (
+              <div key={index} className="attachment-item">
+                <img 
+                  src={url} 
+                  alt={`Attachment ${index + 1}`}
+                  className="attachment-thumb"
+                  onError={(e) => {
+                    e.target.src = "https://via.placeholder.com/60?text=Image+Error";
+                  }}
+                />
+                <span className="attachment-url" title={url}>
+                  {url.length > 50 ? url.substring(0, 50) + "..." : url}
+                </span>
                 <button
                   className="remove-attachment-btn"
-                  onClick={() => removeAttachment(preview.id)}
+                  onClick={() => removeAttachment(index)}
                   title="Remove image"
                   disabled={submitting}
                 >
@@ -133,8 +146,8 @@ const ReviewComposer = ({ onSubmit, onCancel, currentUserId }) => {
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="composer-actions">
         <button

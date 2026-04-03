@@ -1270,11 +1270,16 @@ router.post("/review/create", async (req, res) => {
       }
     }
 
-    // Fetch user info
+    // Fetch user info and add to review
     const userResult = await pool.query("SELECT username, profile_picture FROM users WHERE id = $1", [userId]);
-    review.user = userResult.rows[0];
+    if (userResult.rows.length > 0) {
+      review.username = userResult.rows[0].username;
+      review.profile_picture = userResult.rows[0].profile_picture;
+    }
+    review.type = 'review'; // Add type field
     review.attachments = attachments || [];
     review.replies = [];
+    review.userVote = null; // New review has no vote yet
 
     res.json({ success: true, review });
   } catch (err) {
@@ -1320,11 +1325,16 @@ router.post("/reply/create", async (req, res) => {
       }
     }
 
-    // Fetch user info
+    // Fetch user info and add to reply
     const userResult = await pool.query("SELECT username, profile_picture FROM users WHERE id = $1", [userId]);
-    reply.user = userResult.rows[0];
+    if (userResult.rows.length > 0) {
+      reply.username = userResult.rows[0].username;
+      reply.profile_picture = userResult.rows[0].profile_picture;
+    }
+    reply.type = 'reply'; // Add type field
     reply.attachments = attachments || [];
     reply.replies = [];
+    reply.userVote = null; // New reply has no vote yet
 
     res.json({ success: true, reply });
   } catch (err) {

@@ -84,12 +84,12 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId }) => {
     }
   };
 
-  const handleReply = async (parentId, replyText, isReplyToReply = false) => {
+  const handleReply = async (parentId, replyText, isReplyToReply = false, attachmentUrls = []) => {
     try {
       const payload = {
         userId: currentUserId,
         description: replyText,
-        attachments: [],
+        attachments: attachmentUrls,
       };
 
       if (isReplyToReply) {

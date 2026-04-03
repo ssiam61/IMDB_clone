@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "../styles/ReviewCard.css";
+import ReplyComposer from "./ReplyComposer";
 
 const ReviewCard = ({ review, onReply, onDelete, onVote, currentUserId }) => {
   const [showReplyComposer, setShowReplyComposer] = useState(false);
@@ -104,34 +105,14 @@ const ReviewCard = ({ review, onReply, onDelete, onVote, currentUserId }) => {
       </div>
 
       {showReplyComposer && (
-        <div className="reply-composer">
-          <textarea 
-            className="reply-input"
-            placeholder="Write a reply..."
-            onKeyDown={(e) => {
-              if (e.key === "Escape") setShowReplyComposer(false);
-            }}
-          />
-          <button 
-            className="submit-reply-btn"
-            onClick={() => {
-              const textarea = document.querySelector(".reply-input");
-              if (textarea.value.trim()) {
-                onReply(review.id, textarea.value);
-                textarea.value = "";
-                setShowReplyComposer(false);
-              }
-            }}
-          >
-            Post Reply
-          </button>
-          <button 
-            className="cancel-reply-btn"
-            onClick={() => setShowReplyComposer(false)}
-          >
-            Cancel
-          </button>
-        </div>
+        <ReplyComposer
+          onSubmit={(description, attachmentUrls) => {
+            onReply(review.id, description, false, attachmentUrls);
+            setShowReplyComposer(false);
+          }}
+          onCancel={() => setShowReplyComposer(false)}
+          placeholder="Write a reply to this review..."
+        />
       )}
 
       {review.replies && review.replies.length > 0 && (
@@ -275,34 +256,14 @@ const ReplyCard = ({ reply, parentReviewId, onReply, onDelete, onVote, currentUs
       </div>
 
       {showReplyComposer && (
-        <div className="nested-reply-composer">
-          <textarea 
-            className="nested-reply-input"
-            placeholder="Write a reply..."
-            onKeyDown={(e) => {
-              if (e.key === "Escape") setShowReplyComposer(false);
-            }}
-          />
-          <button 
-            className="submit-nested-reply-btn"
-            onClick={() => {
-              const textarea = document.querySelector(".nested-reply-input");
-              if (textarea.value.trim()) {
-                onReply(reply.id, textarea.value, true);
-                textarea.value = "";
-                setShowReplyComposer(false);
-              }
-            }}
-          >
-            Post Reply
-          </button>
-          <button 
-            className="cancel-nested-reply-btn"
-            onClick={() => setShowReplyComposer(false)}
-          >
-            Cancel
-          </button>
-        </div>
+        <ReplyComposer
+          onSubmit={(description, attachmentUrls) => {
+            onReply(reply.id, description, true, attachmentUrls);
+            setShowReplyComposer(false);
+          }}
+          onCancel={() => setShowReplyComposer(false)}
+          placeholder="Write a reply to this thread..."
+        />
       )}
 
       {reply.replies && reply.replies.length > 0 && (
