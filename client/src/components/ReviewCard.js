@@ -2,7 +2,17 @@ import React, { useState } from "react";
 import "../styles/ReviewCard.css";
 import ReplyComposer from "./ReplyComposer";
 
-const ReviewCard = ({ review, onReply, onDelete, onVote, currentUserId, inAdminMode }) => {
+
+const ReviewCard = ({
+  review,
+  onReply,
+  onDeleteReview,
+  onDeleteReply,
+  onVote,
+  currentUserId,
+  inAdminMode
+}) => {
+
   const [showReplyComposer, setShowReplyComposer] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
 
@@ -21,7 +31,7 @@ const ReviewCard = ({ review, onReply, onDelete, onVote, currentUserId, inAdminM
 
   const handleDeleteClick = () => {
     if (window.confirm("Are you sure you want to delete this review?")) {
-      onDelete(review.id);
+      onDeleteReview(review.id);
     }
   };
 
@@ -124,16 +134,18 @@ const ReviewCard = ({ review, onReply, onDelete, onVote, currentUserId, inAdminM
             {showReplies ? "Hide" : "Show"} {review.replies.length} {review.replies.length === 1 ? "reply" : "replies"}
           </button>
           {showReplies && (
-            <ReplyThread 
-              replies={review.replies}
-              parentReviewId={review.id}
-              onReply={onReply}
-              onDelete={onDelete}
-              onVote={onVote}
-              currentUserId={currentUserId}
-              inAdminMode={inAdminMode}
-              depth={0}
-            />
+
+          <ReplyThread
+            replies={review.replies}
+            parentReviewId={review.id}
+            onReply={onReply}
+            onDeleteReply={onDeleteReply}
+            onVote={onVote}
+            currentUserId={currentUserId}
+            inAdminMode={inAdminMode}
+            depth={0}
+          />
+
           )}
         </div>
       )}
@@ -141,16 +153,25 @@ const ReviewCard = ({ review, onReply, onDelete, onVote, currentUserId, inAdminM
   );
 };
 
-const ReplyThread = ({ replies, parentReviewId, onReply, onDelete, onVote, currentUserId, inAdminMode, depth }) => {
+const ReplyThread = ({
+  replies,
+  parentReviewId,
+  onReply,
+  onDeleteReply,
+  onVote,
+  currentUserId,
+  inAdminMode,
+  depth
+}) => {
   return (
     <div className="reply-thread" style={{ marginLeft: `${depth * 24}px` }}>
       {replies.map((reply) => (
-        <ReplyCard 
+        <ReplyCard
           key={reply.id}
           reply={reply}
           parentReviewId={parentReviewId}
           onReply={onReply}
-          onDelete={onDelete}
+          onDeleteReply={onDeleteReply}
           onVote={onVote}
           currentUserId={currentUserId}
           inAdminMode={inAdminMode}
@@ -161,7 +182,18 @@ const ReplyThread = ({ replies, parentReviewId, onReply, onDelete, onVote, curre
   );
 };
 
-const ReplyCard = ({ reply, parentReviewId, onReply, onDelete, onVote, currentUserId, inAdminMode, depth }) => {
+
+const ReplyCard = ({
+  reply,
+  parentReviewId,
+  onReply,
+  onDeleteReply,
+  onVote,
+  currentUserId,
+  inAdminMode,
+  depth
+}) => {
+
   const [showReplyComposer, setShowReplyComposer] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
 
@@ -178,13 +210,15 @@ const ReplyCard = ({ reply, parentReviewId, onReply, onDelete, onVote, currentUs
     return date.toLocaleDateString();
   };
 
+
   const handleDeleteClick = () => {
-    console.log("Delete clicked for reply:", reply.id, "User:", currentUserId, "Reply user:", reply.user_id, "isAdmin:", inAdminMode);
+    console.log("Delete clicked for reply:", reply.id);
     if (window.confirm("Are you sure you want to delete this reply?")) {
-      console.log("Confirmed delete, calling onDelete");
-      onDelete(reply.id);
+      console.log("Confirmed delete, calling onDeleteReply");
+      onDeleteReply(reply.id);
     }
   };
+
 
   const handleVoteClick = (voteType) => {
     onVote(reply.id, voteType, true);
@@ -272,22 +306,24 @@ const ReplyCard = ({ reply, parentReviewId, onReply, onDelete, onVote, currentUs
 
       {reply.replies && reply.replies.length > 0 && (
         <div className="nested-replies">
-          <button 
+          <button
             className="toggle-nested-replies-btn"
             onClick={() => setShowReplies(!showReplies)}
           >
-            {showReplies ? "Hide" : "Show"} {reply.replies.length} {reply.replies.length === 1 ? "reply" : "replies"}
+            {showReplies ? "Hide" : "Show"} {reply.replies.length}{" "}
+            {reply.replies.length === 1 ? "reply" : "replies"}
           </button>
+
           {showReplies && (
-            <ReplyThread 
-              replies={reply.replies}
-              parentReviewId={parentReviewId}
+            <ReplyThread
+              replies={reply.replies}          // ✅ FIXED
+              parentReviewId={parentReviewId}  // ✅ FIXED
               onReply={onReply}
-              onDelete={onDelete}
+              onDeleteReply={onDeleteReply}
               onVote={onVote}
               currentUserId={currentUserId}
               inAdminMode={inAdminMode}
-              depth={depth + 1}
+              depth={depth + 1}                // ✅ FIXED
             />
           )}
         </div>
