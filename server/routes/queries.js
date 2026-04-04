@@ -46,6 +46,7 @@ router.post("/auth/signup", async (req, res) => {
     if (existsCheck.rows.length > 0)
       return res.json({ success: false, error: "Username already taken" });
 
+    await pool.query('BEGIN');
     const insertUser =
       "INSERT INTO users (username, name, email, password, profile_picture, bio) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *";
 
@@ -62,8 +63,10 @@ router.post("/auth/signup", async (req, res) => {
 
     delete newUser.password;
 
+    await pool.query('COMMIT');
     res.json({ success: true, user: newUser, isAdmin: false });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error(err);
     res.json({ success: false, error: "Server error" });
   }
@@ -447,13 +450,16 @@ router.post("/watchlist/add/:userId/:mediaId", async (req, res) => {
       return res.json({ success: false, message: "Already in watchlist" });
     }
 
+    await pool.query('BEGIN');
     await pool.query(
       "INSERT INTO watchlist (user_id, media_id) VALUES ($1, $2)",
       [userId, mediaId]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Added to watchlist" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error adding to watchlist:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -464,13 +470,16 @@ router.post("/watchlist/remove/:userId/:mediaId", async (req, res) => {
   const { userId, mediaId } = req.params;
 
   try {
+    await pool.query('BEGIN');
     await pool.query(
       "DELETE FROM watchlist WHERE user_id = $1 AND media_id = $2",
       [userId, mediaId]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Removed from watchlist" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error removing from watchlist:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -507,13 +516,16 @@ router.post("/fan/add/:userId/:personId", async (req, res) => {
       return res.json({ success: false, message: "Already a fan" });
     }
 
+    await pool.query('BEGIN');
     await pool.query(
       "INSERT INTO fan (user_id, person_id) VALUES ($1, $2)",
       [userId, personId]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Became a fan" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error becoming a fan:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -524,13 +536,16 @@ router.post("/fan/remove/:userId/:personId", async (req, res) => {
   const { userId, personId } = req.params;
 
   try {
+    await pool.query('BEGIN');
     await pool.query(
       "DELETE FROM fan WHERE user_id = $1 AND person_id = $2",
       [userId, personId]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Removed from fans" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error removing fan:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -565,6 +580,7 @@ router.post("/profile/update/:userId", async (req, res) => {
       });
     }
 
+    await pool.query('BEGIN');
     const result = await pool.query(
       `UPDATE users 
        SET name = $1, email = $2, bio = $3
@@ -574,6 +590,7 @@ router.post("/profile/update/:userId", async (req, res) => {
     );
 
     if (result.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({
         success: false,
         error: "User not found",
@@ -582,12 +599,14 @@ router.post("/profile/update/:userId", async (req, res) => {
 
     const updatedUser = result.rows[0];
 
+    await pool.query('COMMIT');
     res.json({
       success: true,
       message: "Profile updated successfully",
       user: updatedUser,
     });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error updating profile:", err);
     res.json({
       success: false,
@@ -607,13 +626,16 @@ router.post("/admin/award/add", async (req, res) => {
       return res.json({ success: false, error: "Name and awarded_by are required" });
     }
 
+    await pool.query('BEGIN');
     const result = await pool.query(
       "INSERT INTO award (name, awarded_by, prize_money) VALUES ($1, $2, $3) RETURNING *",
       [name, awarded_by, prize_money || null]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, award: result.rows[0] });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error adding award:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -628,13 +650,16 @@ router.post("/admin/person/add", async (req, res) => {
       return res.json({ success: false, error: "Name and occupation are required" });
     }
 
+    await pool.query('BEGIN');
     const result = await pool.query(
       "INSERT INTO person (name, occupation, profile_image, biography) VALUES ($1, $2, $3, $4) RETURNING *",
       [name, occupation, profile_image || null, biography || null]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, person: result.rows[0] });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error adding person:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -649,6 +674,7 @@ router.post("/admin/media/add", async (req, res) => {
       return res.json({ success: false, error: "Name, media_type, and release_date are required" });
     }
 
+    await pool.query('BEGIN');
     const mediaResult = await pool.query(
       "INSERT INTO media (name, media_type, teaser_link, thumbnail, description, imdb_rating, duration, release_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
       [name, media_type, teaser_link || null, thumbnail || null, description || null, imdb_rating || null, duration || null, release_date]
@@ -663,8 +689,10 @@ router.post("/admin/media/add", async (req, res) => {
       await pool.query("INSERT INTO series (media_id) VALUES ($1)", [media.id]);
     }
 
+    await pool.query('COMMIT');
     res.json({ success: true, media });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error adding media:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -679,13 +707,16 @@ router.post("/admin/award-event/add-person", async (req, res) => {
       return res.json({ success: false, error: "Person ID, award ID, and year are required" });
     }
 
+    await pool.query('BEGIN');
     const result = await pool.query(
       "INSERT INTO person_award (person_id, award_id, year) VALUES ($1, $2, $3) RETURNING *",
       [person_id, award_id, year]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, personAward: result.rows[0] });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error adding person award:", err);
     if (err.code === "23505") {
       res.json({ success: false, error: "This award entry already exists for this person and year" });
@@ -704,13 +735,16 @@ router.post("/admin/award-event/add-media", async (req, res) => {
       return res.json({ success: false, error: "Media ID, award ID, year, and result are required" });
     }
 
+    await pool.query('BEGIN');
     const queryResult = await pool.query(
       "INSERT INTO media_award (media_id, award_id, year, result) VALUES ($1, $2, $3, $4) RETURNING *",
       [media_id, award_id, year, result]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, mediaAward: queryResult.rows[0] });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error adding media award:", err);
     if (err.code === "23505") {
       res.json({ success: false, error: "This award entry already exists for this media and year" });
@@ -741,13 +775,16 @@ router.post("/admin/season/add", async (req, res) => {
 
     const series = seriesCheck.rows[0];
 
+    await pool.query('BEGIN');
     const result = await pool.query(
       "INSERT INTO season (series_id, number, title, description, thumbnail, release_date) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
       [series.id, number, title || null, description || null, thumbnail || null, release_date || null]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, season: result.rows[0] });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error adding season:", err);
     if (err.code === "23505") {
       res.json({ success: false, error: "This season number already exists for this series" });
@@ -770,13 +807,16 @@ router.post("/admin/media-personality/add", async (req, res) => {
       return res.json({ success: false, error: "Role must be 'actor' or 'director'" });
     }
 
+    await pool.query('BEGIN');
     const result = await pool.query(
       "INSERT INTO media_personality (media_id, person_id, role) VALUES ($1, $2, $3) RETURNING *",
       [media_id, person_id, role]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, mediaPersonality: result.rows[0] });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error adding media personality:", err);
     if (err.code === "23505") {
       res.json({ success: false, error: "This person is already assigned this role in this media" });
@@ -795,13 +835,16 @@ router.post("/admin/episode/add", async (req, res) => {
       return res.json({ success: false, error: "Season ID and episode number are required" });
     }
 
+    await pool.query('BEGIN');
     const result = await pool.query(
       "INSERT INTO episode (season_id, number, title, description, thumbnail, release_date, duration) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
       [season_id, number, title || null, description || null, thumbnail || null, release_date || null, duration || null]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, episode: result.rows[0] });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error adding episode:", err);
     if (err.code === "23505") {
       res.json({ success: false, error: "This episode number already exists for this season" });
@@ -821,17 +864,21 @@ router.put("/admin/media/edit/:id", async (req, res) => {
       return res.json({ success: false, error: "Media name is required" });
     }
 
+    await pool.query('BEGIN');
     const result = await pool.query(
       "UPDATE media SET name=$1, description=$2, imdb_rating=$3, duration=$4, release_date=$5, teaser_link=$6, thumbnail=$7 WHERE id=$8 RETURNING *",
       [name, description || null, imdb_rating || null, duration || null, release_date || null, teaser_link || null, thumbnail || null, id]
     );
 
     if (result.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Media not found" });
     }
 
+    await pool.query('COMMIT');
     res.json({ success: true, media: result.rows[0] });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error editing media:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -847,17 +894,21 @@ router.put("/admin/season/edit/:id", async (req, res) => {
       return res.json({ success: false, error: "Season number and release date are required" });
     }
 
+    await pool.query('BEGIN');
     const result = await pool.query(
       "UPDATE season SET number=$1, title=$2, release_date=$3 WHERE id=$4 RETURNING *",
       [number, title || null, release_date, id]
     );
 
     if (result.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Season not found" });
     }
 
+    await pool.query('COMMIT');
     res.json({ success: true, season: result.rows[0] });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error editing season:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -873,17 +924,21 @@ router.put("/admin/person/edit/:id", async (req, res) => {
       return res.json({ success: false, error: "Person name is required" });
     }
 
+    await pool.query('BEGIN');
     const result = await pool.query(
       "UPDATE person SET name=$1, biography=$2, profile_image=$3 WHERE id=$4 RETURNING *",
       [name, biography || null, profile_image || null, id]
     );
 
     if (result.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Person not found" });
     }
 
+    await pool.query('COMMIT');
     res.json({ success: true, person: result.rows[0] });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error editing person:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -896,17 +951,21 @@ router.delete("/watchlist/remove/:userId/:mediaId", async (req, res) => {
   const { userId, mediaId } = req.params;
 
   try {
+    await pool.query('BEGIN');
     const result = await pool.query(
       "DELETE FROM watchlist WHERE user_id=$1 AND media_id=$2 RETURNING *",
       [userId, mediaId]
     );
 
     if (result.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Not in watchlist" });
     }
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Removed from watchlist" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error removing from watchlist:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -917,17 +976,21 @@ router.delete("/fan/remove/:userId/:personId", async (req, res) => {
   const { userId, personId } = req.params;
 
   try {
+    await pool.query('BEGIN');
     const result = await pool.query(
       "DELETE FROM fan WHERE user_id=$1 AND person_id=$2 RETURNING *",
       [userId, personId]
     );
 
     if (result.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Not a fan" });
     }
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Unfollowed" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error removing fan:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -938,17 +1001,21 @@ router.delete("/admin/media-personality/remove/:mediaId/:personId", async (req, 
   const { mediaId, personId } = req.params;
 
   try {
+    await pool.query('BEGIN');
     const result = await pool.query(
       "DELETE FROM media_personality WHERE media_id=$1 AND person_id=$2 RETURNING *",
       [mediaId, personId]
     );
 
     if (result.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Not found in media" });
     }
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Removed from media" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error removing from media:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -959,17 +1026,21 @@ router.delete("/admin/season/delete/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
+    await pool.query('BEGIN');
     const result = await pool.query(
       "DELETE FROM season WHERE id=$1 RETURNING *",
       [id]
     );
 
     if (result.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Season not found" });
     }
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Season deleted" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error deleting season:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -980,17 +1051,21 @@ router.delete("/admin/episode/delete/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
+    await pool.query('BEGIN');
     const result = await pool.query(
       "DELETE FROM episode WHERE id=$1 RETURNING *",
       [id]
     );
 
     if (result.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Episode not found" });
     }
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Episode deleted" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error deleting episode:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -1001,17 +1076,21 @@ router.delete("/admin/media/delete/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
+    await pool.query('BEGIN');
     const result = await pool.query(
       "DELETE FROM media WHERE id=$1 RETURNING *",
       [id]
     );
 
     if (result.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Media not found" });
     }
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Media deleted" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error deleting media:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -1022,17 +1101,21 @@ router.delete("/admin/award/delete/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
+    await pool.query('BEGIN');
     const result = await pool.query(
       "DELETE FROM award WHERE id=$1 RETURNING *",
       [id]
     );
 
     if (result.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Award not found" });
     }
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Award deleted" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error deleting award:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -1043,17 +1126,21 @@ router.delete("/admin/person/delete/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
+    await pool.query('BEGIN');
     const result = await pool.query(
       "DELETE FROM person WHERE id=$1 RETURNING *",
       [id]
     );
 
     if (result.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Person not found" });
     }
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Person deleted" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error deleting person:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -1254,6 +1341,7 @@ router.post("/review/create", async (req, res) => {
       return res.json({ success: false, error: "Exactly one of media_id, season_id, or episode_id is required" });
     }
 
+    await pool.query('BEGIN');
     const reviewResult = await pool.query(
       `INSERT INTO review (user_id, media_id, season_id, episode_id, star_point, description)
        VALUES ($1, $2, $3, $4, $5, $6)
@@ -1284,8 +1372,10 @@ router.post("/review/create", async (req, res) => {
     review.replies = [];
     review.userVote = null; // New review has no vote yet
 
+    await pool.query('COMMIT');
     res.json({ success: true, review });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error creating review:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -1309,6 +1399,7 @@ router.post("/reply/create", async (req, res) => {
       return res.json({ success: false, error: "Cannot provide both parent_review_id and parent_reply_id" });
     }
 
+    await pool.query('BEGIN');
     const replyResult = await pool.query(
       `INSERT INTO reply (user_id, parent_review_id, parent_reply_id, description)
        VALUES ($1, $2, $3, $4)
@@ -1339,8 +1430,10 @@ router.post("/reply/create", async (req, res) => {
     reply.replies = [];
     reply.userVote = null; // New reply has no vote yet
 
+    await pool.query('COMMIT');
     res.json({ success: true, reply });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error creating reply:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -1360,9 +1453,11 @@ router.put("/review/vote/:reviewId", async (req, res) => {
       return res.json({ success: false, error: "Vote type must be 'upvote', 'downvote', or 'remove'" });
     }
 
+    await pool.query('BEGIN');
     // Check if review exists
     const reviewCheck = await pool.query("SELECT * FROM review WHERE id = $1", [reviewId]);
     if (reviewCheck.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Review not found" });
     }
     const review = reviewCheck.rows[0];
@@ -1425,12 +1520,14 @@ router.put("/review/vote/:reviewId", async (req, res) => {
       [userId, reviewId]
     );
 
+    await pool.query('COMMIT');
     res.json({
       success: true,
       review: updatedReview.rows[0],
       userVote: userVote.rows.length > 0 ? userVote.rows[0].vote_type : null
     });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error updating review vote:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -1450,9 +1547,11 @@ router.put("/reply/vote/:replyId", async (req, res) => {
       return res.json({ success: false, error: "Vote type must be 'upvote', 'downvote', or 'remove'" });
     }
 
+    await pool.query('BEGIN');
     // Check if reply exists
     const replyCheck = await pool.query("SELECT * FROM reply WHERE id = $1", [replyId]);
     if (replyCheck.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Reply not found" });
     }
     const reply = replyCheck.rows[0];
@@ -1515,12 +1614,14 @@ router.put("/reply/vote/:replyId", async (req, res) => {
       [userId, replyId]
     );
 
+    await pool.query('COMMIT');
     res.json({
       success: true,
       reply: updatedReply.rows[0],
       userVote: userVote.rows.length > 0 ? userVote.rows[0].vote_type : null
     });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error updating reply vote:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -1532,10 +1633,12 @@ router.delete("/review/:reviewId", async (req, res) => {
   const { userId, isAdmin } = req.body;
 
   try {
+    await pool.query('BEGIN');
     // Verify user owns the review or is admin
     const reviewResult = await pool.query("SELECT * FROM review WHERE id = $1", [reviewId]);
 
     if (reviewResult.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Review not found" });
     }
 
@@ -1543,6 +1646,7 @@ router.delete("/review/:reviewId", async (req, res) => {
 
     // Allow delete if user owns review OR is admin
     if (review.user_id !== parseInt(userId) && !isAdmin) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Unauthorized" });
     }
 
@@ -1552,8 +1656,10 @@ router.delete("/review/:reviewId", async (req, res) => {
       [reviewId]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Review deleted" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error deleting review:", err);
     res.json({ success: false, error: "Server error" });
   }
@@ -1565,10 +1671,12 @@ router.delete("/reply/:replyId", async (req, res) => {
   const { userId, isAdmin } = req.body;
 
   try {
+    await pool.query('BEGIN');
     // Verify user owns the reply or is admin
     const replyResult = await pool.query("SELECT * FROM reply WHERE id = $1", [replyId]);
 
     if (replyResult.rows.length === 0) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Reply not found" });
     }
 
@@ -1576,6 +1684,7 @@ router.delete("/reply/:replyId", async (req, res) => {
 
     // Allow delete if user owns reply OR is admin
     if (reply.user_id !== parseInt(userId) && !isAdmin) {
+      await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Unauthorized" });
     }
 
@@ -1585,8 +1694,10 @@ router.delete("/reply/:replyId", async (req, res) => {
       [replyId]
     );
 
+    await pool.query('COMMIT');
     res.json({ success: true, message: "Reply deleted" });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("Error deleting reply:", err);
     res.json({ success: false, error: "Server error" });
   }
