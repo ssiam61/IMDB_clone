@@ -17,7 +17,6 @@ router.post("/auth/login", async (req, res) => {
     if (user.password !== password)
       return res.json({ success: false, error: "Invalid username or password" });
 
-    // Check if user is an admin
     const adminCheck = await pool.query(
       "SELECT * FROM admin WHERE user_id = $1",
       [user.id]
@@ -436,7 +435,6 @@ router.get("/fan/user/:userId", async (req, res) => {
   }
 });
 
-// Add to watchlist
 router.post("/watchlist/add/:userId/:mediaId", async (req, res) => {
   const { userId, mediaId } = req.params;
 
@@ -465,7 +463,6 @@ router.post("/watchlist/add/:userId/:mediaId", async (req, res) => {
   }
 });
 
-// Remove from watchlist
 router.post("/watchlist/remove/:userId/:mediaId", async (req, res) => {
   const { userId, mediaId } = req.params;
 
@@ -485,7 +482,6 @@ router.post("/watchlist/remove/:userId/:mediaId", async (req, res) => {
   }
 });
 
-// Check if in watchlist
 router.get("/watchlist/check/:userId/:mediaId", async (req, res) => {
   const { userId, mediaId } = req.params;
 
@@ -502,7 +498,6 @@ router.get("/watchlist/check/:userId/:mediaId", async (req, res) => {
   }
 });
 
-// Become a fan
 router.post("/fan/add/:userId/:personId", async (req, res) => {
   const { userId, personId } = req.params;
 
@@ -531,7 +526,6 @@ router.post("/fan/add/:userId/:personId", async (req, res) => {
   }
 });
 
-// Remove from fans
 router.post("/fan/remove/:userId/:personId", async (req, res) => {
   const { userId, personId } = req.params;
 
@@ -551,7 +545,6 @@ router.post("/fan/remove/:userId/:personId", async (req, res) => {
   }
 });
 
-// Check if fan
 router.get("/fan/check/:userId/:personId", async (req, res) => {
   const { userId, personId } = req.params;
 
@@ -615,9 +608,7 @@ router.post("/profile/update/:userId", async (req, res) => {
   }
 });
 
-// Admin endpoints for creating new content
 
-// Add new award
 router.post("/admin/award/add", async (req, res) => {
   const { name, awarded_by, prize_money } = req.body;
 
@@ -641,7 +632,6 @@ router.post("/admin/award/add", async (req, res) => {
   }
 });
 
-// Add new person (actor/director)
 router.post("/admin/person/add", async (req, res) => {
   const { name, occupation, profile_image, biography } = req.body;
 
@@ -665,7 +655,6 @@ router.post("/admin/person/add", async (req, res) => {
   }
 });
 
-// Add new media (movie or series)
 router.post("/admin/media/add", async (req, res) => {
   const { name, media_type, teaser_link, thumbnail, description, imdb_rating, duration, release_date } = req.body;
 
@@ -682,7 +671,6 @@ router.post("/admin/media/add", async (req, res) => {
 
     const media = mediaResult.rows[0];
 
-    // Create movie or series entry
     if (media_type === "movie") {
       await pool.query("INSERT INTO movie (media_id) VALUES ($1)", [media.id]);
     } else if (media_type === "series") {
@@ -698,7 +686,6 @@ router.post("/admin/media/add", async (req, res) => {
   }
 });
 
-// Add person award event
 router.post("/admin/award-event/add-person", async (req, res) => {
   const { person_id, award_id, year } = req.body;
 
@@ -726,7 +713,6 @@ router.post("/admin/award-event/add-person", async (req, res) => {
   }
 });
 
-// Add media award event
 router.post("/admin/award-event/add-media", async (req, res) => {
   const { media_id, award_id, year, result } = req.body;
 
@@ -754,7 +740,6 @@ router.post("/admin/award-event/add-media", async (req, res) => {
   }
 });
 
-// Add season to media (series)
 router.post("/admin/season/add", async (req, res) => {
   const { media_id, number, title, description, thumbnail, release_date } = req.body;
 
@@ -763,7 +748,6 @@ router.post("/admin/season/add", async (req, res) => {
       return res.json({ success: false, error: "Media ID and season number are required" });
     }
 
-    // Check if series exists
     const seriesCheck = await pool.query(
       "SELECT * FROM series WHERE media_id = $1",
       [media_id]
@@ -794,7 +778,6 @@ router.post("/admin/season/add", async (req, res) => {
   }
 });
 
-// Add cast member or director to media
 router.post("/admin/media-personality/add", async (req, res) => {
   const { media_id, person_id, role } = req.body;
 
@@ -826,7 +809,6 @@ router.post("/admin/media-personality/add", async (req, res) => {
   }
 });
 
-// Add episode to season
 router.post("/admin/episode/add", async (req, res) => {
   const { season_id, number, title, description, thumbnail, release_date, duration } = req.body;
 
@@ -854,7 +836,6 @@ router.post("/admin/episode/add", async (req, res) => {
   }
 });
 
-// Admin endpoint for editing media
 router.put("/admin/media/edit/:id", async (req, res) => {
   const { id } = req.params;
   const { name, description, imdb_rating, duration, release_date, teaser_link, thumbnail } = req.body;
@@ -884,7 +865,6 @@ router.put("/admin/media/edit/:id", async (req, res) => {
   }
 });
 
-// Admin endpoint for editing season
 router.put("/admin/season/edit/:id", async (req, res) => {
   const { id } = req.params;
   const { number, title, release_date } = req.body;
@@ -914,7 +894,6 @@ router.put("/admin/season/edit/:id", async (req, res) => {
   }
 });
 
-// Admin endpoint for editing person
 router.put("/admin/person/edit/:id", async (req, res) => {
   const { id } = req.params;
   const { name, biography, profile_image } = req.body;
@@ -944,9 +923,7 @@ router.put("/admin/person/edit/:id", async (req, res) => {
   }
 });
 
-// Delete endpoints for removing items from rows
 
-// Delete from watchlist
 router.delete("/watchlist/remove/:userId/:mediaId", async (req, res) => {
   const { userId, mediaId } = req.params;
 
@@ -971,7 +948,6 @@ router.delete("/watchlist/remove/:userId/:mediaId", async (req, res) => {
   }
 });
 
-// Delete fan relationship
 router.delete("/fan/remove/:userId/:personId", async (req, res) => {
   const { userId, personId } = req.params;
 
@@ -996,7 +972,6 @@ router.delete("/fan/remove/:userId/:personId", async (req, res) => {
   }
 });
 
-// Delete media-personality (cast/director)
 router.delete("/admin/media-personality/remove/:mediaId/:personId", async (req, res) => {
   const { mediaId, personId } = req.params;
 
@@ -1021,7 +996,6 @@ router.delete("/admin/media-personality/remove/:mediaId/:personId", async (req, 
   }
 });
 
-// Delete season
 router.delete("/admin/season/delete/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -1046,7 +1020,6 @@ router.delete("/admin/season/delete/:id", async (req, res) => {
   }
 });
 
-// Delete episode
 router.delete("/admin/episode/delete/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -1071,7 +1044,6 @@ router.delete("/admin/episode/delete/:id", async (req, res) => {
   }
 });
 
-// Delete media
 router.delete("/admin/media/delete/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -1096,7 +1068,6 @@ router.delete("/admin/media/delete/:id", async (req, res) => {
   }
 });
 
-// Delete award
 router.delete("/admin/award/delete/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -1121,7 +1092,6 @@ router.delete("/admin/award/delete/:id", async (req, res) => {
   }
 });
 
-// Delete person
 router.delete("/admin/person/delete/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -1146,9 +1116,7 @@ router.delete("/admin/person/delete/:id", async (req, res) => {
   }
 });
 
-// ============ COMMENT/REVIEW SYSTEM ENDPOINTS ============
 
-// Helper function to recursively fetch replies with nested structure
 const fetchRepliesForReview = async (reviewOrReplyId, isParentReply = false, userId = null) => {
   try {
     const repliesQuery = isParentReply
@@ -1166,14 +1134,12 @@ const fetchRepliesForReview = async (reviewOrReplyId, isParentReply = false, use
     const repliesResult = await pool.query(repliesQuery, [reviewOrReplyId]);
     const replies = repliesResult.rows;
 
-    // Get attachments for each reply
     for (let reply of replies) {
-      reply.type = 'reply'; // Add type to distinguish from reviews
+      reply.type = 'reply'; 
       const attachmentsQuery = "SELECT attachment FROM reply_attachments WHERE reply_id = $1";
       const attachmentsResult = await pool.query(attachmentsQuery, [reply.id]);
       reply.attachments = attachmentsResult.rows.map(row => row.attachment);
 
-      // Get user's vote status if userId provided
       if (userId) {
         const userVoteResult = await pool.query(
           "SELECT vote_type FROM reply_votes WHERE user_id = $1 AND reply_id = $2",
@@ -1182,7 +1148,6 @@ const fetchRepliesForReview = async (reviewOrReplyId, isParentReply = false, use
         reply.userVote = userVoteResult.rows.length > 0 ? userVoteResult.rows[0].vote_type : null;
       }
 
-      // Recursively fetch nested replies
       reply.replies = await fetchRepliesForReview(reply.id, true, userId);
     }
 
@@ -1193,10 +1158,9 @@ const fetchRepliesForReview = async (reviewOrReplyId, isParentReply = false, use
   }
 };
 
-// GET reviews for media with all replies and user info
 router.get("/review/media/:mediaId", async (req, res) => {
   const { mediaId } = req.params;
-  const userId = req.query.userId; // Optional - to get user's vote status
+  const userId = req.query.userId; 
 
   try {
     const reviewsQuery = `
@@ -1210,14 +1174,12 @@ router.get("/review/media/:mediaId", async (req, res) => {
     const reviewsResult = await pool.query(reviewsQuery, [mediaId]);
     const reviews = reviewsResult.rows;
 
-    // Get attachments and replies for each review
     for (let review of reviews) {
-      review.type = 'review'; // Add type to distinguish from replies
+      review.type = 'review'; 
       const attachmentsQuery = "SELECT attachment FROM post_attachments WHERE post_id = $1";
       const attachmentsResult = await pool.query(attachmentsQuery, [review.id]);
       review.attachments = attachmentsResult.rows.map(row => row.attachment);
 
-      // Get user's vote status if userId provided
       if (userId) {
         const userVoteResult = await pool.query(
           "SELECT vote_type FROM review_votes WHERE user_id = $1 AND review_id = $2",
@@ -1226,7 +1188,6 @@ router.get("/review/media/:mediaId", async (req, res) => {
         review.userVote = userVoteResult.rows.length > 0 ? userVoteResult.rows[0].vote_type : null;
       }
 
-      // Fetch nested replies
       review.replies = await fetchRepliesForReview(review.id, false, userId);
     }
 
@@ -1238,10 +1199,9 @@ router.get("/review/media/:mediaId", async (req, res) => {
   }
 });
 
-// GET reviews for season with all replies and user info
 router.get("/review/season/:seasonId", async (req, res) => {
   const { seasonId } = req.params;
-  const userId = req.query.userId; // Optional - to get user's vote status
+  const userId = req.query.userId;
 
   try {
     const reviewsQuery = `
@@ -1255,14 +1215,12 @@ router.get("/review/season/:seasonId", async (req, res) => {
     const reviewsResult = await pool.query(reviewsQuery, [seasonId]);
     const reviews = reviewsResult.rows;
 
-    // Get attachments and replies for each review
     for (let review of reviews) {
-      review.type = 'review'; // Add type to distinguish from replies
+      review.type = 'review'; 
       const attachmentsQuery = "SELECT attachment FROM post_attachments WHERE post_id = $1";
       const attachmentsResult = await pool.query(attachmentsQuery, [review.id]);
       review.attachments = attachmentsResult.rows.map(row => row.attachment);
 
-      // Get user's vote status if userId provided
       if (userId) {
         const userVoteResult = await pool.query(
           "SELECT vote_type FROM review_votes WHERE user_id = $1 AND review_id = $2",
@@ -1271,7 +1229,6 @@ router.get("/review/season/:seasonId", async (req, res) => {
         review.userVote = userVoteResult.rows.length > 0 ? userVoteResult.rows[0].vote_type : null;
       }
 
-      // Fetch nested replies
       review.replies = await fetchRepliesForReview(review.id, false, userId);
     }
 
@@ -1282,11 +1239,9 @@ router.get("/review/season/:seasonId", async (req, res) => {
   }
 });
 
-// GET reviews for episode with all replies and user info
 router.get("/review/episode/:episodeId", async (req, res) => {
   const { episodeId } = req.params;
-  const userId = req.query.userId; // Optional - to get user's vote status
-
+  const userId = req.query.userId; 
   try {
     const reviewsQuery = `
       SELECT r.*, u.username, u.profile_picture
@@ -1299,14 +1254,12 @@ router.get("/review/episode/:episodeId", async (req, res) => {
     const reviewsResult = await pool.query(reviewsQuery, [episodeId]);
     const reviews = reviewsResult.rows;
 
-    // Get attachments and replies for each review
     for (let review of reviews) {
-      review.type = 'review'; // Add type to distinguish from replies
+      review.type = 'review'; 
       const attachmentsQuery = "SELECT attachment FROM post_attachments WHERE post_id = $1";
       const attachmentsResult = await pool.query(attachmentsQuery, [review.id]);
       review.attachments = attachmentsResult.rows.map(row => row.attachment);
 
-      // Get user's vote status if userId provided
       if (userId) {
         const userVoteResult = await pool.query(
           "SELECT vote_type FROM review_votes WHERE user_id = $1 AND review_id = $2",
@@ -1315,7 +1268,6 @@ router.get("/review/episode/:episodeId", async (req, res) => {
         review.userVote = userVoteResult.rows.length > 0 ? userVoteResult.rows[0].vote_type : null;
       }
 
-      // Fetch nested replies
       review.replies = await fetchRepliesForReview(review.id, false, userId);
     }
 
@@ -1326,7 +1278,6 @@ router.get("/review/episode/:episodeId", async (req, res) => {
   }
 });
 
-// POST create new review
 router.post("/review/create", async (req, res) => {
   const { userId, mediaId, seasonId, episodeId, starPoint, description, attachments } = req.body;
 
@@ -1335,7 +1286,6 @@ router.post("/review/create", async (req, res) => {
       return res.json({ success: false, error: "User ID and description are required" });
     }
 
-    // Ensure exactly one of mediaId, seasonId, episodeId is provided
     const providedCount = [mediaId, seasonId, episodeId].filter(v => v != null).length;
     if (providedCount !== 1) {
       return res.json({ success: false, error: "Exactly one of media_id, season_id, or episode_id is required" });
@@ -1351,7 +1301,6 @@ router.post("/review/create", async (req, res) => {
 
     const review = reviewResult.rows[0];
 
-    // Add attachments if provided
     if (attachments && attachments.length > 0) {
       for (let attachment of attachments) {
         await pool.query(
@@ -1361,17 +1310,15 @@ router.post("/review/create", async (req, res) => {
       }
     }
 
-    // Fetch user info and add to review
     const userResult = await pool.query("SELECT username, profile_picture FROM users WHERE id = $1", [userId]);
     if (userResult.rows.length > 0) {
       review.username = userResult.rows[0].username;
       review.profile_picture = userResult.rows[0].profile_picture;
     }
-    review.type = 'review'; // Add type field
+    review.type = 'review'; 
     review.attachments = attachments || [];
     review.replies = [];
-    review.userVote = null; // New review has no vote yet
-
+    review.userVote = null; 
     await pool.query('COMMIT');
     res.json({ success: true, review });
   } catch (err) {
@@ -1381,7 +1328,6 @@ router.post("/review/create", async (req, res) => {
   }
 });
 
-// POST create new reply
 router.post("/reply/create", async (req, res) => {
   const { userId, parentReviewId, parentReplyId, description, attachments } = req.body;
 
@@ -1390,7 +1336,6 @@ router.post("/reply/create", async (req, res) => {
       return res.json({ success: false, error: "User ID and description are required" });
     }
 
-    // Ensure exactly one of parentReviewId or parentReplyId is provided
     if (!parentReviewId && !parentReplyId) {
       return res.json({ success: false, error: "Either parent_review_id or parent_reply_id is required" });
     }
@@ -1409,7 +1354,6 @@ router.post("/reply/create", async (req, res) => {
 
     const reply = replyResult.rows[0];
 
-    // Add attachments if provided
     if (attachments && attachments.length > 0) {
       for (let attachment of attachments) {
         await pool.query(
@@ -1419,17 +1363,15 @@ router.post("/reply/create", async (req, res) => {
       }
     }
 
-    // Fetch user info and add to reply
     const userResult = await pool.query("SELECT username, profile_picture FROM users WHERE id = $1", [userId]);
     if (userResult.rows.length > 0) {
       reply.username = userResult.rows[0].username;
       reply.profile_picture = userResult.rows[0].profile_picture;
     }
-    reply.type = 'reply'; // Add type field
+    reply.type = 'reply'; 
     reply.attachments = attachments || [];
     reply.replies = [];
-    reply.userVote = null; // New reply has no vote yet
-
+    reply.userVote = null;
     await pool.query('COMMIT');
     res.json({ success: true, reply });
   } catch (err) {
@@ -1439,7 +1381,6 @@ router.post("/reply/create", async (req, res) => {
   }
 });
 
-// PUT update review upvote/downvote with per-user tracking
 router.put("/review/vote/:reviewId", async (req, res) => {
   const { reviewId } = req.params;
   const { userId, voteType } = req.body;
@@ -1454,7 +1395,7 @@ router.put("/review/vote/:reviewId", async (req, res) => {
     }
 
     await pool.query('BEGIN');
-    // Check if review exists
+
     const reviewCheck = await pool.query("SELECT * FROM review WHERE id = $1", [reviewId]);
     if (reviewCheck.rows.length === 0) {
       await pool.query('ROLLBACK');
@@ -1462,7 +1403,6 @@ router.put("/review/vote/:reviewId", async (req, res) => {
     }
     const review = reviewCheck.rows[0];
 
-    // Check if user already voted
     const existingVote = await pool.query(
       "SELECT vote_type FROM review_votes WHERE user_id = $1 AND review_id = $2",
       [userId, reviewId]
@@ -1472,21 +1412,20 @@ router.put("/review/vote/:reviewId", async (req, res) => {
     let downvoteChange = 0;
 
     if (existingVote.rows.length > 0) {
-      // User already voted - handle vote change or removal
       const previousVote = existingVote.rows[0].vote_type;
 
       if (voteType === "remove") {
-        // Remove the vote
+
         if (previousVote === "upvote") upvoteChange = -1;
         if (previousVote === "downvote") downvoteChange = -1;
         await pool.query("DELETE FROM review_votes WHERE user_id = $1 AND review_id = $2", [userId, reviewId]);
       } else if (voteType === previousVote) {
-        // Same vote clicked again - toggle off
+
         if (voteType === "upvote") upvoteChange = -1;
         if (voteType === "downvote") downvoteChange = -1;
         await pool.query("DELETE FROM review_votes WHERE user_id = $1 AND review_id = $2", [userId, reviewId]);
       } else {
-        // Change vote (e.g., upvote -> downvote)
+
         if (previousVote === "upvote") upvoteChange = -1;
         if (previousVote === "downvote") downvoteChange = -1;
         if (voteType === "upvote") upvoteChange = 1;
@@ -1497,7 +1436,6 @@ router.put("/review/vote/:reviewId", async (req, res) => {
         );
       }
     } else {
-      // New vote
       if (voteType !== "remove") {
         if (voteType === "upvote") upvoteChange = 1;
         if (voteType === "downvote") downvoteChange = 1;
@@ -1508,13 +1446,11 @@ router.put("/review/vote/:reviewId", async (req, res) => {
       }
     }
 
-    // Update review vote counts
     const updatedReview = await pool.query(
       "UPDATE review SET upvote = upvote + $1, downvote = downvote + $2 WHERE id = $3 RETURNING *",
       [upvoteChange, downvoteChange, reviewId]
     );
 
-    // Get user's current vote status
     const userVote = await pool.query(
       "SELECT vote_type FROM review_votes WHERE user_id = $1 AND review_id = $2",
       [userId, reviewId]
@@ -1533,7 +1469,6 @@ router.put("/review/vote/:reviewId", async (req, res) => {
   }
 });
 
-// PUT update reply upvote/downvote with per-user tracking
 router.put("/reply/vote/:replyId", async (req, res) => {
   const { replyId } = req.params;
   const { userId, voteType } = req.body;
@@ -1548,7 +1483,6 @@ router.put("/reply/vote/:replyId", async (req, res) => {
     }
 
     await pool.query('BEGIN');
-    // Check if reply exists
     const replyCheck = await pool.query("SELECT * FROM reply WHERE id = $1", [replyId]);
     if (replyCheck.rows.length === 0) {
       await pool.query('ROLLBACK');
@@ -1556,7 +1490,6 @@ router.put("/reply/vote/:replyId", async (req, res) => {
     }
     const reply = replyCheck.rows[0];
 
-    // Check if user already voted
     const existingVote = await pool.query(
       "SELECT vote_type FROM reply_votes WHERE user_id = $1 AND reply_id = $2",
       [userId, replyId]
@@ -1566,21 +1499,17 @@ router.put("/reply/vote/:replyId", async (req, res) => {
     let downvoteChange = 0;
 
     if (existingVote.rows.length > 0) {
-      // User already voted - handle vote change or removal
       const previousVote = existingVote.rows[0].vote_type;
 
       if (voteType === "remove") {
-        // Remove the vote
         if (previousVote === "upvote") upvoteChange = -1;
         if (previousVote === "downvote") downvoteChange = -1;
         await pool.query("DELETE FROM reply_votes WHERE user_id = $1 AND reply_id = $2", [userId, replyId]);
       } else if (voteType === previousVote) {
-        // Same vote clicked again - toggle off
         if (voteType === "upvote") upvoteChange = -1;
         if (voteType === "downvote") downvoteChange = -1;
         await pool.query("DELETE FROM reply_votes WHERE user_id = $1 AND reply_id = $2", [userId, replyId]);
       } else {
-        // Change vote (e.g., upvote -> downvote)
         if (previousVote === "upvote") upvoteChange = -1;
         if (previousVote === "downvote") downvoteChange = -1;
         if (voteType === "upvote") upvoteChange = 1;
@@ -1591,7 +1520,6 @@ router.put("/reply/vote/:replyId", async (req, res) => {
         );
       }
     } else {
-      // New vote
       if (voteType !== "remove") {
         if (voteType === "upvote") upvoteChange = 1;
         if (voteType === "downvote") downvoteChange = 1;
@@ -1602,13 +1530,11 @@ router.put("/reply/vote/:replyId", async (req, res) => {
       }
     }
 
-    // Update reply vote counts
     const updatedReply = await pool.query(
       "UPDATE reply SET upvote = upvote + $1, downvote = downvote + $2 WHERE id = $3 RETURNING *",
       [upvoteChange, downvoteChange, replyId]
     );
 
-    // Get user's current vote status
     const userVote = await pool.query(
       "SELECT vote_type FROM reply_votes WHERE user_id = $1 AND reply_id = $2",
       [userId, replyId]
@@ -1627,14 +1553,12 @@ router.put("/reply/vote/:replyId", async (req, res) => {
   }
 });
 
-// DELETE review
 router.delete("/review/:reviewId", async (req, res) => {
   const { reviewId } = req.params;
   const { userId, isAdmin } = req.body;
 
   try {
     await pool.query('BEGIN');
-    // Verify user owns the review or is admin
     const reviewResult = await pool.query("SELECT * FROM review WHERE id = $1", [reviewId]);
 
     if (reviewResult.rows.length === 0) {
@@ -1644,13 +1568,11 @@ router.delete("/review/:reviewId", async (req, res) => {
 
     const review = reviewResult.rows[0];
 
-    // Allow delete if user owns review OR is admin
     if (review.user_id !== parseInt(userId) && !isAdmin) {
       await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Unauthorized" });
     }
 
-    // Delete review cascades to replies via database constraint
     const deleteResult = await pool.query(
       "DELETE FROM review WHERE id = $1 RETURNING *",
       [reviewId]
@@ -1665,14 +1587,12 @@ router.delete("/review/:reviewId", async (req, res) => {
   }
 });
 
-// DELETE reply
 router.delete("/reply/:replyId", async (req, res) => {
   const { replyId } = req.params;
   const { userId, isAdmin } = req.body;
 
   try {
     await pool.query('BEGIN');
-    // Verify user owns the reply or is admin
     const replyResult = await pool.query("SELECT * FROM reply WHERE id = $1", [replyId]);
 
     if (replyResult.rows.length === 0) {
@@ -1682,13 +1602,11 @@ router.delete("/reply/:replyId", async (req, res) => {
 
     const reply = replyResult.rows[0];
 
-    // Allow delete if user owns reply OR is admin
     if (reply.user_id !== parseInt(userId) && !isAdmin) {
       await pool.query('ROLLBACK');
       return res.json({ success: false, error: "Unauthorized" });
     }
 
-    // Delete reply cascades to nested replies via database constraint
     const deleteResult = await pool.query(
       "DELETE FROM reply WHERE id = $1 RETURNING *",
       [replyId]
@@ -1739,12 +1657,10 @@ router.get("/search", async (req, res) => {
 });
 
 
-// GET user activity (reviews & replies) for profile
 router.get("/profile/activity/:userId", async (req, res) => {
   const { userId } = req.params;
 
   try {
-    // ================= REVIEWS BY USER =================
     const reviewsResult = await pool.query(
       `
       SELECT
@@ -1770,7 +1686,6 @@ router.get("/profile/activity/:userId", async (req, res) => {
       type: "review"
     }));
 
-    // ================= REPLIES BY USER (INCLUDING REPLY-TO-REPLY) =================
     const repliesResult = await pool.query(
       `
       SELECT
@@ -1778,10 +1693,8 @@ router.get("/profile/activity/:userId", async (req, res) => {
         rp.description,
         rp.created_at,
 
-        -- Resolve the owning review
         COALESCE(rv.id, rv_parent.id) AS parent_review_id,
 
-        -- Resolve media context
         COALESCE(rv.media_id, rv_parent.media_id)   AS media_id,
         COALESCE(rv.season_id, rv_parent.season_id) AS season_id,
         COALESCE(rv.episode_id, rv_parent.episode_id) AS episode_id,
@@ -1789,11 +1702,9 @@ router.get("/profile/activity/:userId", async (req, res) => {
         m.name AS media_name
       FROM reply rp
 
-      -- Case 1: reply → review
       LEFT JOIN review rv
         ON rv.id = rp.parent_review_id
 
-      -- Case 2: reply → reply → review
       LEFT JOIN reply parent_rp
         ON parent_rp.id = rp.parent_reply_id
 

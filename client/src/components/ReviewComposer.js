@@ -24,7 +24,6 @@ const ReviewComposer = ({ onSubmit, onCancel, currentUserId }) => {
       return;
     }
     
-    // Basic URL validation
     try {
       new URL(imageUrlInput);
     } catch {

@@ -703,6 +703,12 @@ const MediaPage = () => {
                 <span style={pageStyles.infoLabel}>Duration</span>
                 <span style={pageStyles.infoValue}>{media.duration} min</span>
               </div>
+              {media.watchlist_count !== undefined && (
+                <div style={pageStyles.infoField}>
+                  <span style={pageStyles.infoLabel}>Watchlisted</span>
+                  <span style={pageStyles.infoValue}>{media.watchlist_count} {media.watchlist_count === 1 ? 'User' : 'Users'}</span>
+                </div>
+              )}
             </div>
 
             {media.description && (

@@ -172,15 +172,12 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId, inAdminMod
 
   const handleVote = async (itemId, voteType, isReply = false) => {
     try {
-      // Helper to find item recursively
       const findItem = (items, targetId, isTarget) => {
         for (let item of items) {
-          // Check if this item matches: correct ID and correct type
           const itemIsReply = item.type === 'reply';
           if (item.id === targetId && itemIsReply === isTarget) {
             return item;
           }
-          // Recursively search nested replies
           if (item.replies && item.replies.length > 0) {
             const found = findItem(item.replies, targetId, isTarget);
             if (found) return found;
@@ -198,7 +195,6 @@ const CommentThread = ({ mediaId, seasonId, episodeId, currentUserId, inAdminMod
       let voteToSend = voteType;
       if (item.userVote === voteType) voteToSend = "remove";
 
-      // Update UI optimistically
       const updateReviewsRecursive = (items, targetId, updated, isTarget) => {
         return items.map((r) => {
           const itemIsReply = r.type === 'reply';

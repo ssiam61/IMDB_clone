@@ -316,14 +316,14 @@ const ReplyCard = ({
 
           {showReplies && (
             <ReplyThread
-              replies={reply.replies}          // ✅ FIXED
-              parentReviewId={parentReviewId}  // ✅ FIXED
+              replies={reply.replies}          
+              parentReviewId={parentReviewId}  
               onReply={onReply}
               onDeleteReply={onDeleteReply}
               onVote={onVote}
               currentUserId={currentUserId}
               inAdminMode={inAdminMode}
-              depth={depth + 1}                // ✅ FIXED
+              depth={depth + 1}                
             />
           )}
         </div>

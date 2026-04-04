@@ -271,6 +271,11 @@ const PersonPage = () => {
             />
             <h2 style={pageStyles.name}>{person.name}</h2>
             <p style={pageStyles.occupation}>{person.occupation}</p>
+            {person.fan_count !== undefined && (
+              <p style={{ fontSize: "1rem", color: "#a0aec0", marginTop: "12px" }}>
+                {person.fan_count} {person.fan_count === 1 ? 'Fan' : 'Fans'}
+              </p>
+            )}
             
             <button
               onClick={isFan ? handleRemoveFan : handleBecomeFan}
