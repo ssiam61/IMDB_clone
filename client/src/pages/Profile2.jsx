@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import UserNavbar from "../components/UserNavbar";
 import MediaCard from "../components/MediaCard";
 import CategoryRow from "../components/CategoryRow";
 import { authenticatedFetch, getUser } from "../utils/auth";
+import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -21,15 +21,15 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [searchPopupType, setSearchPopupType] = useState(null);
-  const [searchPopupQuery, setSearchPopupQuery] = useState("");
-  const [searchPopupResults, setSearchPopupResults] = useState([]);
-  const [searchPopupLoading, setSearchPopupLoading] = useState(false);
+  const [showAddMediaModal, setShowAddMediaModal] = useState(false);
+  const [showAddActorModal, setShowAddActorModal] = useState(false);
+  const [showAddDirectorModal, setShowAddDirectorModal] = useState(false);
+  const [addMediaForm, setAddMediaForm] = useState({ media_id: "", name: "" });
+  const [addActorForm, setAddActorForm] = useState({ person_id: "", name: "" });
+  const [addDirectorForm, setAddDirectorForm] = useState({ person_id: "", name: "" });
   const [addingItem, setAddingItem] = useState(false);
   const [userReviews, setUserReviews] = useState([]);
   const [userReplies, setUserReplies] = useState([]);
-  const debounceRef = useRef(null);
-
   const storedUser = getUser();
   const userId = storedUser?.id;
 
@@ -46,7 +46,7 @@ const Profile = () => {
           setUserReviews(activityData.reviews);
           setUserReplies(activityData.replies);
         }
-        const data = await res.json();
+                const data = await res.json();
 
         if (data.success) {
           setUser(data.user);
@@ -157,54 +157,22 @@ const Profile = () => {
     }
   };
 
-  const fetchPopupResults = async (query) => {
-    if (query.trim().length < 2) {
-      setSearchPopupResults([]);
+  const handleAddMedia = async () => {
+    if (!addMediaForm.media_id) {
+      alert("Please enter a media ID");
       return;
     }
-    setSearchPopupLoading(true);
-    try {
-      const res = await authenticatedFetch(`http://localhost:5000/api/search?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      if (data.success) {
-        setSearchPopupResults(data.results);
-      }
-    } catch (err) {
-      console.error("Search error:", err);
-    } finally {
-      setSearchPopupLoading(false);
-    }
-  };
-
-  const handlePopupSearchChange = (e) => {
-    const val = e.target.value;
-    setSearchPopupQuery(val);
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchPopupResults(val), 300);
-  };
-
-  const openSearchPopup = (type) => {
-    setSearchPopupType(type);
-    setSearchPopupQuery("");
-    setSearchPopupResults([]);
-  };
-
-  const closeSearchPopup = () => {
-    setSearchPopupType(null);
-    setSearchPopupQuery("");
-    setSearchPopupResults([]);
-  };
-
-  const addMediaToWatchlist = async (mediaId, mediaName) => {
     setAddingItem(true);
     try {
       const res = await authenticatedFetch(
-        `http://localhost:5000/api/watchlist/add/${userId}/${mediaId}`,
+        `http://localhost:5000/api/watchlist/add/${userId}/${addMediaForm.media_id}`,
         { method: "POST" }
       );
       const data = await res.json();
       if (data.success) {
-        setWatchlist([...watchlist, { id: mediaId, name: mediaName }]);
+        setWatchlist([...watchlist, { id: addMediaForm.media_id, name: addMediaForm.name }]);
+        setAddMediaForm({ media_id: "", name: "" });
+        setShowAddMediaModal(false);
       } else {
         alert(`Error: ${data.error}`);
       }
@@ -215,16 +183,22 @@ const Profile = () => {
     }
   };
 
-  const addActorToFavorites = async (personId, personName) => {
+  const handleAddActor = async () => {
+    if (!addActorForm.person_id) {
+      alert("Please enter a person ID");
+      return;
+    }
     setAddingItem(true);
     try {
       const res = await authenticatedFetch(
-        `http://localhost:5000/api/fan/add/${userId}/${personId}`,
+        `http://localhost:5000/api/fan/add/${userId}/${addActorForm.person_id}`,
         { method: "POST" }
       );
       const data = await res.json();
       if (data.success) {
-        setFavoriteActors([...favoriteActors, { id: personId, name: personName }]);
+        setFavoriteActors([...favoriteActors, { id: addActorForm.person_id, name: addActorForm.name }]);
+        setAddActorForm({ person_id: "", name: "" });
+        setShowAddActorModal(false);
       } else {
         alert(`Error: ${data.error}`);
       }
@@ -235,16 +209,22 @@ const Profile = () => {
     }
   };
 
-  const addDirectorToFavorites = async (personId, personName) => {
+  const handleAddDirector = async () => {
+    if (!addDirectorForm.person_id) {
+      alert("Please enter a person ID");
+      return;
+    }
     setAddingItem(true);
     try {
       const res = await authenticatedFetch(
-        `http://localhost:5000/api/fan/add/${userId}/${personId}`,
+        `http://localhost:5000/api/fan/add/${userId}/${addDirectorForm.person_id}`,
         { method: "POST" }
       );
       const data = await res.json();
       if (data.success) {
-        setFavoriteDirectors([...favoriteDirectors, { id: personId, name: personName }]);
+        setFavoriteDirectors([...favoriteDirectors, { id: addDirectorForm.person_id, name: addDirectorForm.name }]);
+        setAddDirectorForm({ person_id: "", name: "" });
+        setShowAddDirectorModal(false);
       } else {
         alert(`Error: ${data.error}`);
       }
@@ -254,17 +234,6 @@ const Profile = () => {
       setAddingItem(false);
     }
   };
-
-  const handlePopupResultClick = (result) => {
-    if (searchPopupType === "watchlist") {
-      addMediaToWatchlist(result.id, result.name);
-    } else if (searchPopupType === "actor") {
-      addActorToFavorites(result.id, result.name);
-    } else if (searchPopupType === "director") {
-      addDirectorToFavorites(result.id, result.name);
-    }
-    closeSearchPopup();
-  };;
 
   const handleDeleteFromWatchlist = async (mediaId) => {
     try {
@@ -525,7 +494,7 @@ const Profile = () => {
                   />
                 ))}
                 <div
-                  onClick={() => openSearchPopup("watchlist")}
+                  onClick={() => setShowAddMediaModal(true)}
                   style={{
                     width: "140px",
                     height: "180px",
@@ -578,7 +547,7 @@ const Profile = () => {
                     </div>
                   ))}
                   <div
-                    onClick={() => openSearchPopup("actor")}
+                    onClick={() => setShowAddActorModal(true)}
                     style={{
                       width: "140px",
                       height: "180px",
@@ -633,7 +602,7 @@ const Profile = () => {
                     </div>
                   ))}
                   <div
-                    onClick={() => openSearchPopup("director")}
+                    onClick={() => setShowAddDirectorModal(true)}
                     style={{
                       width: "140px",
                       height: "180px",
@@ -1091,135 +1060,293 @@ const Profile = () => {
           </div>
         )}
 
-        {/* Unified Search Popup */}
-        {searchPopupType && (
+        {/* Add Media Modal */}
+        {showAddMediaModal && (
           <div style={{
-            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-            background: "rgba(0,0,0,0.7)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            zIndex: 9999,
+            position: "fixed",
+            top: "0",
+            left: "0",
+            right: "0",
+            bottom: "0",
+            background: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: "2000",
           }}>
             <div style={{
-              background: "#1a1f3a",
+              background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)",
+              padding: "32px",
               borderRadius: "12px",
-              padding: "24px",
-              width: "480px",
-              maxWidth: "90vw",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-              border: "1px solid rgba(255,90,126,0.3)",
+              border: "1px solid rgba(255, 90, 126, 0.3)",
+              maxWidth: "500px",
+              width: "90%",
             }}>
-              {/* Title */}
-              <h3 style={{ color: "#fff", marginBottom: "16px", fontSize: "18px" }}>
-                {searchPopupType === "watchlist" && "Search Movie or Series"}
-                {searchPopupType === "actor" && "Search Actor"}
-                {searchPopupType === "director" && "Search Director"}
-              </h3>
-
-              {/* Search Input */}
-              <input
-                type="text"
-                placeholder="Type to search..."
-                value={searchPopupQuery}
-                onChange={handlePopupSearchChange}
-                autoFocus
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(255,90,126,0.4)",
-                  background: "rgba(255,255,255,0.05)",
-                  color: "#fff",
-                  fontSize: "14px",
-                  marginBottom: "12px",
-                  boxSizing: "border-box",
-                  outline: "none",
-                }}
-              />
-
-              {/* Loading */}
-              {searchPopupLoading && (
-                <p style={{ color: "#aaa", fontSize: "13px" }}>Searching...</p>
-              )}
-
-              {/* Results */}
-              <div style={{ maxHeight: "280px", overflowY: "auto" }}>
-                {searchPopupResults
-                  .filter(r => {
-                    if (searchPopupType === "watchlist")
-                      return r.type === "movie" || r.type === "series";
-                    if (searchPopupType === "actor" || searchPopupType === "director")
-                      return r.type === "person";
-                    return true;
-                  })
-                  .map((result) => (
-                    <div
-                      key={result.id}
-                      onClick={() => handlePopupResultClick(result)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        padding: "10px",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        marginBottom: "6px",
-                        background: "rgba(255,255,255,0.04)",
-                        transition: "background 0.2s",
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = "rgba(255,90,126,0.15)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
-                    >
-                      <img
-                        src={result.thumbnail || "/placeholder.png"}
-                        alt={result.name}
-                        style={{
-                          width: "40px", height: "40px",
-                          borderRadius: "6px", objectFit: "cover",
-                          background: "#333",
-                        }}
-                      />
-                      <div>
-                        <div style={{ color: "#fff", fontSize: "14px", fontWeight: 500 }}>
-                          {result.name}
-                        </div>
-                        <div style={{ color: "#aaa", fontSize: "12px", textTransform: "capitalize" }}>
-                          {result.type}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                }
-
-                {/* No results message */}
-                {!searchPopupLoading &&
-                 searchPopupQuery.trim().length >= 2 &&
-                 searchPopupResults.filter(r => {
-                   if (searchPopupType === "watchlist")
-                     return r.type === "movie" || r.type === "series";
-                   return r.type === "person";
-                 }).length === 0 && (
-                  <p style={{ color: "#aaa", fontSize: "13px", textAlign: "center", padding: "16px" }}>
-                    No results found
-                  </p>
-                )}
+              <h3 style={{ color: "#ff5a7e", marginBottom: "20px" }}>📌 Add to Watchlist</h3>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Media ID *</label>
+                <input
+                  type="number"
+                  value={addMediaForm.media_id}
+                  onChange={(e) => setAddMediaForm({ ...addMediaForm, media_id: e.target.value })}
+                  placeholder="Enter media ID"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#254061",
+                    border: "1px solid rgba(255, 90, 126, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    boxSizing: "border-box",
+                  }}
+                />
               </div>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Title (for reference)</label>
+                <input
+                  type="text"
+                  value={addMediaForm.name}
+                  onChange={(e) => setAddMediaForm({ ...addMediaForm, name: e.target.value })}
+                  placeholder="Enter title"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#254061",
+                    border: "1px solid rgba(255, 90, 126, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={handleAddMedia}
+                  disabled={addingItem}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "linear-gradient(135deg, #ff5a7e, #a855f7)",
+                    border: "none",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    opacity: addingItem ? 0.7 : 1,
+                  }}
+                >
+                  {addingItem ? "Adding..." : "Add"}
+                </button>
+                <button
+                  onClick={() => setShowAddMediaModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "rgba(255, 90, 126, 0.2)",
+                    border: "1px solid rgba(255, 90, 126, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-              {/* Cancel Button */}
-              <button
-                onClick={closeSearchPopup}
-                style={{
-                  marginTop: "16px",
-                  padding: "8px 20px",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(255,90,126,0.4)",
-                  background: "transparent",
-                  color: "#ff5a7e",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                }}
-              >
-                Cancel
-              </button>
+        {/* Add Actor Modal */}
+        {showAddActorModal && (
+          <div style={{
+            position: "fixed",
+            top: "0",
+            left: "0",
+            right: "0",
+            bottom: "0",
+            background: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: "2000",
+          }}>
+            <div style={{
+              background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)",
+              padding: "32px",
+              borderRadius: "12px",
+              border: "1px solid rgba(168, 85, 247, 0.3)",
+              maxWidth: "500px",
+              width: "90%",
+            }}>
+              <h3 style={{ color: "#a855f7", marginBottom: "20px" }}>🎬 Add Favorite Actor</h3>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Person ID *</label>
+                <input
+                  type="number"
+                  value={addActorForm.person_id}
+                  onChange={(e) => setAddActorForm({ ...addActorForm, person_id: e.target.value })}
+                  placeholder="Enter person ID"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#254061",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Name (for reference)</label>
+                <input
+                  type="text"
+                  value={addActorForm.name}
+                  onChange={(e) => setAddActorForm({ ...addActorForm, name: e.target.value })}
+                  placeholder="Enter name"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#254061",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={handleAddActor}
+                  disabled={addingItem}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "linear-gradient(135deg, #a855f7, #668ef7)",
+                    border: "none",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    opacity: addingItem ? 0.7 : 1,
+                  }}
+                >
+                  {addingItem ? "Adding..." : "Add"}
+                </button>
+                <button
+                  onClick={() => setShowAddActorModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "rgba(168, 85, 247, 0.2)",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Director Modal */}
+        {showAddDirectorModal && (
+          <div style={{
+            position: "fixed",
+            top: "0",
+            left: "0",
+            right: "0",
+            bottom: "0",
+            background: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: "2000",
+          }}>
+            <div style={{
+              background: "linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%)",
+              padding: "32px",
+              borderRadius: "12px",
+              border: "1px solid rgba(168, 85, 247, 0.3)",
+              maxWidth: "500px",
+              width: "90%",
+            }}>
+              <h3 style={{ color: "#a855f7", marginBottom: "20px" }}>🎥 Add Favorite Director</h3>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Person ID *</label>
+                <input
+                  type="number"
+                  value={addDirectorForm.person_id}
+                  onChange={(e) => setAddDirectorForm({ ...addDirectorForm, person_id: e.target.value })}
+                  placeholder="Enter person ID"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#254061",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ color: "#ffffff", display: "block", marginBottom: "8px", fontWeight: "600" }}>Name (for reference)</label>
+                <input
+                  type="text"
+                  value={addDirectorForm.name}
+                  onChange={(e) => setAddDirectorForm({ ...addDirectorForm, name: e.target.value })}
+                  placeholder="Enter name"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    background: "#254061",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={handleAddDirector}
+                  disabled={addingItem}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "linear-gradient(135deg, #a855f7, #668ef7)",
+                    border: "none",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    opacity: addingItem ? 0.7 : 1,
+                  }}
+                >
+                  {addingItem ? "Adding..." : "Add"}
+                </button>
+                <button
+                  onClick={() => setShowAddDirectorModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    background: "rgba(168, 85, 247, 0.2)",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}
