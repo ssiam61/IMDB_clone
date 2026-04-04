@@ -209,6 +209,13 @@ router.get("/media/full/:id", async (req, res) => {
 
     const media = mediaResult.rows[0];
 
+    // Fetch watchlist count using function
+    const watchlistCountResult = await pool.query(
+      `SELECT get_media_watchlist_count($1) as watchlist_count`,
+      [mediaId]
+    );
+    media.watchlist_count = watchlistCountResult.rows[0].watchlist_count;
+
     const directors = (
       await pool.query(
         `SELECT person.id, person.name, person.profile_image
@@ -378,6 +385,13 @@ router.get("/person/full/:id", async (req, res) => {
 
     const person = personResult.rows[0];
 
+    // Fetch fan count using function
+    const fanCountResult = await pool.query(
+      `SELECT get_person_fan_count($1) as fan_count`,
+      [personId]
+    );
+    person.fan_count = fanCountResult.rows[0].fan_count;
+
     const mediaRows = (
       await pool.query(
         `SELECT media.id, media.name, media.thumbnail
@@ -439,18 +453,11 @@ router.post("/watchlist/add/:userId/:mediaId", async (req, res) => {
   const { userId, mediaId } = req.params;
 
   try {
-    const checkResult = await pool.query(
-      "SELECT * FROM watchlist WHERE user_id = $1 AND media_id = $2",
-      [userId, mediaId]
-    );
-
-    if (checkResult.rows.length > 0) {
-      return res.json({ success: false, message: "Already in watchlist" });
-    }
-
     await pool.query('BEGIN');
+    
+    // Call procedure to add to watchlist (handles duplicate check internally)
     await pool.query(
-      "INSERT INTO watchlist (user_id, media_id) VALUES ($1, $2)",
+      'CALL add_to_watchlist($1, $2)',
       [userId, mediaId]
     );
 
@@ -502,18 +509,11 @@ router.post("/fan/add/:userId/:personId", async (req, res) => {
   const { userId, personId } = req.params;
 
   try {
-    const checkResult = await pool.query(
-      "SELECT * FROM fan WHERE user_id = $1 AND person_id = $2",
-      [userId, personId]
-    );
-
-    if (checkResult.rows.length > 0) {
-      return res.json({ success: false, message: "Already a fan" });
-    }
-
     await pool.query('BEGIN');
+    
+    // Call procedure to add fan (handles duplicate check internally)
     await pool.query(
-      "INSERT INTO fan (user_id, person_id) VALUES ($1, $2)",
+      'CALL add_fan($1, $2)',
       [userId, personId]
     );
 
@@ -1292,11 +1292,17 @@ router.post("/review/create", async (req, res) => {
     }
 
     await pool.query('BEGIN');
-    const reviewResult = await pool.query(
-      `INSERT INTO review (user_id, media_id, season_id, episode_id, star_point, description)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
+    
+    // Call procedure to submit review (triggers handle rating recalc and watchlist removal)
+    await pool.query(
+      'CALL submit_review($1, $2, $3, $4, $5, $6)',
       [userId, mediaId || null, seasonId || null, episodeId || null, starPoint || null, description]
+    );
+
+    // Fetch the created review by using the latest review for this user
+    const reviewResult = await pool.query(
+      `SELECT * FROM review WHERE user_id = $1 ORDER BY created_at DESC, id DESC LIMIT 1`,
+      [userId]
     );
 
     const review = reviewResult.rows[0];
