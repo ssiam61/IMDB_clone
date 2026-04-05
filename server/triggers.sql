@@ -1,6 +1,3 @@
-
---
-
 ALTER TABLE person 
 ADD COLUMN IF NOT EXISTS fan_count INTEGER DEFAULT 0;
 
